@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Attachment, Chat, ChatMessage, LlmMessage, ServerChat } from 'app/modules/chat/chat.types';
+import { Attachment, Chat, ChatMessage, ServerChat } from 'app/modules/chat/chat.types';
 import {
     BehaviorSubject,
     Observable,
@@ -13,17 +13,20 @@ import {
     throwError, catchError,
 } from 'rxjs';
 import { FilePart, ImagePart, TextPart } from './ai.types';
+import {GenerateOptions} from "app/core/user/user.types";
 
 @Injectable({ providedIn: 'root' })
 export class ChatService {
     private _chat: BehaviorSubject<Chat> = new BehaviorSubject(null);
     private _chats: BehaviorSubject<Chat[]> = new BehaviorSubject(null);
+    /** Flag indicating whether chats have been loaded from the server */
+    private _chatsLoaded: boolean = false;
 
     /**
      * Constructor
      */
     constructor(private _httpClient: HttpClient) {
-        this.getChats();
+        // Chats will be loaded on-demand via getChats()
     }
 
     private base64ToBlob(base64: string, mimeType: string): Blob {
@@ -70,21 +73,35 @@ export class ChatService {
     // -----------------------------------------------------------------------------------------------------
 
     /**
-     * Get chats
+     * Get chats - returns cached data if available, otherwise fetches from server
+     * @returns Observable of Chat array
      */
     getChats(): Observable<any> {
+        // Return cached chats if already loaded
+        if (this._chatsLoaded && this._chats.value) {
+            return of(this._chats.value);
+        }
+
+        // Otherwise fetch from server
         return this._httpClient.get<Chat[]>('/api/chats').pipe(
             tap((response: Chat[]) => {
-                response = (response as any).data.chats
+                response = (response as any).data.chats;
                 this._chats.next(response);
+                this._chatsLoaded = true;
+            }),
+            catchError((error) => {
+                // Reset loaded flag on error to prevent caching failed state
+                this._chatsLoaded = false;
+                return throwError(() => error);
             })
         );
     }
 
-    createChat(message: string, llmId: string, attachments?: Attachment[]): Observable<Chat> {
+    createChat(message: string, llmId: string, options?: GenerateOptions, attachments?: Attachment[]): Observable<Chat> {
         const formData = new FormData();
         formData.append('text', message);
         formData.append('llmId', llmId);
+        if (options) formData.append('options', JSON.stringify(options));
 
         if (attachments && attachments.length > 0) {
             attachments.forEach((attachment, index) => {
@@ -107,7 +124,7 @@ export class ChatService {
             tap(() => {
                 const currentChats = this._chats.value || [];
                 this._chats.next(currentChats.filter(chat => chat.id !== chatId));
-                if (this._chat.getValue().id === chatId) {
+                if (this._chat.getValue()?.id === chatId) {
                     this._chat.next(null);
                 }
             })
@@ -303,10 +320,11 @@ export class ChatService {
      * @param llmId LLM identifier
      * @param attachments
      */
-    sendMessage(chatId: string, message: string, llmId: string, attachments?: Attachment[]): Observable<Chat> {
+    sendMessage(chatId: string, message: string, llmId: string, options?: GenerateOptions, attachments?: Attachment[]): Observable<Chat> {
         const formData = new FormData();
         formData.append('text', message);
         formData.append('llmId', llmId);
+        if (options) formData.append('options', JSON.stringify(options));
 
         if (attachments && attachments.length > 0) {
             attachments.forEach((attachment, index) => {

@@ -7,7 +7,7 @@ import { span } from '#o11y/trace';
 import { CompileErrorAnalysis, CompileErrorAnalysisDetails, analyzeCompileErrors } from '#swe/analyzeCompileErrors';
 import { SelectedFile, selectFilesAgent } from '#swe/discovery/selectFilesAgent';
 import { includeAlternativeAiToolFiles } from '#swe/includeAlternativeAiToolFiles';
-import { getRepositoryOverview, getTopLevelSummary } from '#swe/repoIndexDocBuilder';
+import { getRepositoryOverview, getTopLevelSummary } from '#swe/index/repoIndexDocBuilder';
 import { reviewChanges } from '#swe/reviewChanges';
 import { supportingInformation } from '#swe/supportingInformation';
 import { execCommand, runShellCommand } from '#utils/exec';
@@ -38,16 +38,18 @@ export class CodeEditingAgent {
 	/**
 	 * Runs a workflow which finds, edits and creates the required files to implement the requirements, and committing changes to version control.
 	 * It also compiles, formats, lints, and runs tests where applicable.
-	 * @param requirements The detailed requirements to implement, including supporting documentation and code samples. Do not refer to details in memory etc, you must provide the actual details.
+	 * @param requirements
+	 * @param fileSelection {string[]} the files which the code editing agent will have access to. Only provide if a comprehensive analysis has been done, otherwise omit or provide null for a sub-agent to perform the file selection.
 	 * altOptions are for programmatic use and not exposed to the autonomous agents.
 	 */
 	@func()
 	async runCodeEditWorkflow(
 		requirements: string,
-		altOptions: { fileSelection?: string[]; projectInfo?: ProjectInfo; workingDirectory?: string } = {},
+		fileSelection?: string[] | null,
+		altOptions?: { projectInfo?: ProjectInfo; workingDirectory?: string },
 	): Promise<void> {
-		let projectInfo: ProjectInfo;
-		if (!altOptions.projectInfo) {
+		let projectInfo: ProjectInfo = altOptions?.projectInfo;
+		if (!projectInfo) {
 			const detected: ProjectInfo[] = await detectProjectInfo();
 			if (detected.length !== 1) throw new Error('projectInfo array must have one item');
 			projectInfo = detected[0];
@@ -56,7 +58,7 @@ export class CodeEditingAgent {
 
 		const fs: FileSystemService = getFileSystem();
 
-		if (altOptions.workingDirectory) fs.setWorkingDirectory(altOptions.workingDirectory);
+		if (altOptions?.workingDirectory) fs.setWorkingDirectory(altOptions.workingDirectory);
 
 		fs.setWorkingDirectory(projectInfo.baseDir);
 
@@ -72,8 +74,7 @@ export class CodeEditingAgent {
 		const gitBase = !projectInfo.devBranch || projectInfo.devBranch === currentBranch ? headCommit : projectInfo.devBranch;
 		logger.info(`git base ${gitBase}`);
 
-		let fileSelection: string[] = altOptions.fileSelection || [];
-		if (!fileSelection) {
+		if (!fileSelection?.length) {
 			// Find the initial set of files required for editing
 			// const filesResponse: SelectFilesResponse = await this.selectFilesToEdit(requirements, projectInfo);
 			// fileSelection = [...filesResponse.primaryFiles.map((selected) => selected.path), ...filesResponse.secondaryFiles.map((selected) => selected.path)];
@@ -102,9 +103,11 @@ export class CodeEditingAgent {
 		implementationRequirements += '\nEnsure new code is well commented.';
 
 		const searchPrompt = `${repositoryOverview}${installedPackages}\n<requirement>\n${implementationRequirements}\n</requirement>
-Given the requirements, if there are any changes which require using open source libraries, provide search queries to look up the API usage online.
+Given the requirements, if there are any specific changes which require using open source libraries, and only if it's not clear from existing code or you general knowledge what the API is, then provide search queries to look up the API usage online.
 
-First discuss what 3rd party API usages would be required in the changes, if any. Then taking into account propose queries for online research, which must contain all the required context (e.g. language, library). For example if the requirements were "Update the Bigtable table results to include the table size" and from the repository information we could determine that it is a node.js project, then a suitable query would be "With the Google Cloud Node.js sdk how can I get the size of a Bigtable table?"
+Limit the queries to the minimal amount where you are uncertain of the API. You will have the opportunity to search again if there are compile errors in the code changes.
+
+First discuss what 3rd party API usages would be required in the changes, if any. Then taking into account propose queries for online research, which must contain all the required context (e.g. language, library). For example if the requirements were "Update the Bigtable table results to include the table size" and from the repository information we could determine that it is a node.js project, then a suitable query would be "With the Google Cloud Node.js sdk verion X.Y.Z how can I get the size of a Bigtable table?"
 (If there is no 3rd party API usage that is not already done in the provided files then return an empty array for the searchQueries property)
 
 Then respond in following format:
@@ -327,6 +330,7 @@ Then respond in following format:
 
 		const result = `<compile_output>
 	<command>${projectInfo.compile}</command>
+	<exit-code>${exitCode}</exit-code>
 	<stdout>
 	${stdout}
 	</stdout>
@@ -407,9 +411,9 @@ Then respond in following format:
 
 	@cacheRetry()
 	async extractFilenames(summary: string): Promise<string[]> {
-		const filenames = await getFileSystem().listFilesRecursively();
+		const filenames = await getFileSystem().getFileSystemTree();
 		const prompt = buildPrompt({
-			information: `<project_files>\n${filenames.join('\n')}\n</project_files>`,
+			information: `<project_files>\n${filenames}\n</project_files>`,
 			requirements: summary,
 			action:
 				'You will respond ONLY in JSON. From the requirements quietly consider which the files may be required to complete the task. You MUST output your answer ONLY as JSON in the format of this example:\n<example>\n{\n files: ["file1", "file2", "file3"]\n}\n</example>',

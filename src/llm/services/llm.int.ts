@@ -5,9 +5,10 @@ import { Claude3_5_Haiku, Claude3_5_Sonnet } from '#llm/services/anthropic';
 import { Claude3_5_Haiku_Vertex, Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
 import { cerebrasLlama3_8b } from '#llm/services/cerebras';
 import { deepinfraQwQ_32B, deepinfraQwen2_5_Coder32B } from '#llm/services/deepinfra';
-import { deepseekChat } from '#llm/services/deepseek';
+import { deepSeekV3 } from '#llm/services/deepseek';
 import { fireworksLlama3_70B } from '#llm/services/fireworks';
 import { groqLlama3_3_70B } from '#llm/services/groq';
+import { nebiusDeepSeekR1 } from '#llm/services/nebius';
 import { Ollama_Phi3 } from '#llm/services/ollama';
 import { GPT4oMini } from '#llm/services/openai';
 import { togetherLlama3_70B } from '#llm/services/together';
@@ -128,7 +129,7 @@ describe('LLMs', () => {
 	});
 
 	describe('Deepseek', () => {
-		const llm = deepseekChat();
+		const llm = deepSeekV3();
 
 		it('should generateText', async () => {
 			const response = await llm.generateText(SKY_PROMPT, { temperature: 0 });
@@ -147,6 +148,15 @@ describe('LLMs', () => {
 
 	describe('Groq', () => {
 		const llm = groqLlama3_3_70B();
+
+		it('should generateText', async () => {
+			const response = await llm.generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
+		});
+	});
+
+	describe('Nebius', () => {
+		const llm = nebiusDeepSeekR1();
 
 		it('should generateText', async () => {
 			const response = await llm.generateText(SKY_PROMPT, { temperature: 0 });

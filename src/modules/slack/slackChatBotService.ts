@@ -8,13 +8,15 @@ import { GoogleCloud } from '#functions/cloud/google/google-cloud';
 import { GitLab } from '#functions/scm/gitlab';
 import { LlmTools } from '#functions/util';
 import { Perplexity } from '#functions/web/perplexity';
-import { ClaudeVertexLLMs } from '#llm/services/anthropic-vertex';
+import { defaultLLMs } from '#llm/services/defaultLlms';
 import { logger } from '#o11y/logger';
 import { sleep } from '#utils/async-utils';
 import { appContext } from '../../applicationContext';
 import { ChatBotService } from '../../chatBot/chatBotService';
 
 let slackApp: App<StringIndexed> | undefined;
+
+const CHATBOT_FUNCTIONS: Array<new () => any> = [GitLab, GoogleCloud, Perplexity, LlmTools];
 
 /**
  * Slack implementation of ChatBotService
@@ -141,8 +143,8 @@ export class SlackChatBotService implements ChatBotService, AgentCompleted {
 					const agentExec = await startAgent({
 						resumeAgentId: `Slack-${threadId}`,
 						initialPrompt: text,
-						llms: ClaudeVertexLLMs(),
-						functions: [GitLab, GoogleCloud, Perplexity, LlmTools],
+						llms: defaultLLMs(),
+						functions: CHATBOT_FUNCTIONS,
 						agentName: `Slack-${threadId}`,
 						systemPrompt:
 							'You are an AI support agent called Sophia.  You are responding to support requests on the company Slack account. Respond in a helpful, concise manner. If you encounter an error responding to the request do not provide details of the error to the user, only respond with "Sorry, I\'m having difficulties providing a response to your request"',

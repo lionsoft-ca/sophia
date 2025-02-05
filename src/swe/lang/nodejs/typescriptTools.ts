@@ -1,5 +1,6 @@
-import { existsSync, readFileSync } from 'node:fs';
+import fs, { existsSync, readFileSync } from 'node:fs';
 import { join } from 'path';
+import { promisify } from 'util';
 import { getFileSystem } from '#agent/agentContextLocalStorage';
 import { func, funcClass } from '#functionSchema/functionDecorators';
 import { logger } from '#o11y/logger';
@@ -36,10 +37,11 @@ export class TypescriptTools implements LanguageTools {
 		// Note that the project needs to be in a compilable state otherwise this will fail
 		logger.info('Generating TypeScript project map');
 		const fss = getFileSystem();
-		const rootFolder = (await fss.getGitRoot()) ?? fss.getWorkingDirectory();
+		const rootFolder = (await fss.getVcsRoot()) ?? fss.getWorkingDirectory();
 		const dtsFolder = join(rootFolder, sophiaDirName, 'dts');
-		const tsConfigExists = await getFileSystem().fileExists('tsconfig.json');
-		if (!tsConfigExists) throw new Error(`tsconfig.json not found in ${getFileSystem().getWorkingDirectory()}`);
+		await promisify(fs.mkdir)(dtsFolder, { recursive: true });
+		const tsConfigExists = await fss.fileExists('tsconfig.json');
+		if (!tsConfigExists) throw new Error(`tsconfig.json not found in ${fss.getWorkingDirectory()}`);
 
 		const { exitCode, stdout, stderr } = await execCommand(`npx tsc -d --declarationDir "./${dtsFolder}" --emitDeclarationOnly`);
 		// Always returns 0 with no output?
@@ -47,14 +49,14 @@ export class TypescriptTools implements LanguageTools {
 
 		const dtsFiles = new Map();
 		// getFileSystem().setWorkingDirectory(dtsFolder)
-		const allFiles: Map<string, string> = await getFileSystem().getFileContentsRecursively(dtsFolder, false);
+		const allFiles: Map<string, string> = await fss.getFileContentsRecursively(dtsFolder, false);
 		// getFileSystem().setWorkingDirectory(process.cwd())
 
 		allFiles.forEach((value, key) => {
 			dtsFiles.set(key.replace('.d.ts', '.ts').replace(dtsFolder, 'src'), value);
 		});
 		logger.info(`${dtsFiles.size} dts files`);
-		return getFileSystem().formatFileContentsAsXml(dtsFiles);
+		return fss.formatFileContentsAsXml(dtsFiles);
 	}
 
 	/**
@@ -64,14 +66,16 @@ export class TypescriptTools implements LanguageTools {
 	@func()
 	async installPackage(packageName: string): Promise<void> {
 		// TODO check Snyk etc for any major vulnerability
+		const fss = getFileSystem();
 		let result: ExecResult;
+		const nvmPrefix: string = (await fss.fileExists('.nvmrc')) ? 'unset NPM_CONFIG_PREFIX && nvm use && ' : '';
 		// NODE_ENV=development is required other if it's set to production the devDependencies won't be installed
-		if (existsSync(join(getFileSystem().getWorkingDirectory(), 'yarn.lock'))) {
-			result = await runShellCommand(`yarn add ${packageName}`, { envVars: { NODE_ENV: 'development' } });
-		} else if (existsSync(join(getFileSystem().getWorkingDirectory(), 'pnpm-lock.yaml'))) {
-			result = await runShellCommand(`pnpm install ${packageName}`, { envVars: { NODE_ENV: 'development' } });
+		if (existsSync(join(fss.getWorkingDirectory(), 'yarn.lock'))) {
+			result = await runShellCommand(`${nvmPrefix}yarn add ${packageName}`, { envVars: { NODE_ENV: 'development' } });
+		} else if (existsSync(join(fss.getWorkingDirectory(), 'pnpm-lock.yaml'))) {
+			result = await runShellCommand(`${nvmPrefix}pnpm install ${packageName}`, { envVars: { NODE_ENV: 'development' } });
 		} else {
-			result = await runShellCommand(`nvm use && npm install ${packageName}`, { envVars: { NODE_ENV: 'development' } });
+			result = await runShellCommand(`${nvmPrefix}npm install ${packageName}`, { envVars: { NODE_ENV: 'development' } });
 		}
 
 		if (result.exitCode > 0) throw new Error(`${result.stdout}\n${result.stderr}`);
