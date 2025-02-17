@@ -79,7 +79,7 @@ export class AiderCodeEditor {
 		const agentId = agentContext()?.agentId ?? 'NONE';
 		const llmHistoryFolder = join(systemDir(), 'aider/llm-history');
 		await promisify(fs.mkdir)(llmHistoryFolder, { recursive: true });
-		const llmHistoryFile = `${llmHistoryFolder}/${getFormattedDate()}__${agentId}}`;
+		const llmHistoryFile = `${llmHistoryFolder}/${getFormattedDate()}__${agentId}`;
 
 		logger.info(`LLM history file ${llmHistoryFile}`);
 		try {
