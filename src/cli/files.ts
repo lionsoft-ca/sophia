@@ -7,9 +7,9 @@ import { RunAgentConfig } from '#agent/agentRunner';
 import { runAgentWorkflow } from '#agent/agentWorkflowRunner';
 import { shutdownTrace } from '#fastify/trace-init/trace-init';
 import { defaultLLMs } from '#llm/services/defaultLlms';
-import { queryWorkflow } from '#swe/discovery/selectFilesAgent';
+import { selectFilesAgent } from '#swe/discovery/selectFilesAgent';
 import { appContext, initApplicationContext } from '../applicationContext';
-import { parseProcessArgs, saveAgentId } from './cli';
+import { parseProcessArgs } from './cli';
 
 async function main() {
 	const agentLLMs: AgentLLMs = defaultLLMs();
@@ -20,7 +20,7 @@ async function main() {
 	console.log(`Prompt: ${initialPrompt}`);
 
 	const config: RunAgentConfig = {
-		agentName: `Query: ${initialPrompt}`,
+		agentName: `Select Files: ${initialPrompt}`,
 		llms: agentLLMs,
 		functions: [], //FileSystem,
 		initialPrompt,
@@ -30,7 +30,7 @@ async function main() {
 		},
 	};
 
-	const agentId = await runAgentWorkflow(config, async () => {
+	await runAgentWorkflow(config, async () => {
 		const agent = agentContext();
 		agent.name = `Query: ${await llms().easy.generateText(
 			`<query>\n${initialPrompt}\n</query>\n\nSummarise the query into only a terse few words for a short title (8 words maximum) for the name of the AI agent completing the task. Output the short title only, nothing else.`,
@@ -38,16 +38,13 @@ async function main() {
 		)}`;
 		await appContext().agentStateService.save(agent);
 
-		const response: any = await queryWorkflow(initialPrompt);
+		let response: any = await selectFilesAgent(initialPrompt);
+		response = JSON.stringify(response);
 		console.log(response);
 
-		writeFileSync('src/cli/query-out', response);
-		console.log('Wrote output to src/cli/query-out');
+		writeFileSync('src/cli/files-out', response);
+		console.log('Wrote output to src/cli/files-out');
 	});
-
-	if (agentId) {
-		saveAgentId('query', agentId);
-	}
 
 	await shutdownTrace();
 }

@@ -1,18 +1,18 @@
+import { nebiusDeepSeekR1 } from '#llm/services/nebius';
+import { sambanovaDeepseekR1 } from '#llm/services/sambanova';
+import { togetherDeepSeekR1 } from '#llm/services/together';
 import { logger } from '#o11y/logger';
 import { BaseLLM } from '../base-llm';
 import { GenerateTextOptions, LLM, LlmMessage } from '../llm';
 import { fireworksDeepSeekR1 } from '../services/fireworks';
 
-import { nebiusDeepSeekR1 } from '#llm/services/nebius';
-import { togetherDeepSeekR1 } from '#llm/services/together';
-
 export function deepSeekFallbackRegistry(): Record<string, () => LLM> {
 	return {
-		DeepSeekFallback: DeepSeekR1_Together_Fireworks,
+		DeepSeekFallback: DeepSeekR1_Together_Fireworks_Nebius_SambaNova,
 	};
 }
 
-export function DeepSeekR1_Together_Fireworks(): LLM {
+export function DeepSeekR1_Together_Fireworks_Nebius_SambaNova(): LLM {
 	return new DeepSeekR1_Fallbacks();
 }
 
@@ -21,15 +21,13 @@ export function DeepSeekR1_Together_Fireworks(): LLM {
  * Tries Together.ai first as is slightly cheaper, then falls back to Fireworks
  */
 export class DeepSeekR1_Fallbacks extends BaseLLM {
-	private together: LLM = togetherDeepSeekR1();
-	private fireworks: LLM = fireworksDeepSeekR1();
-	private nebius: LLM = nebiusDeepSeekR1();
+	private llms: LLM[] = [togetherDeepSeekR1(), fireworksDeepSeekR1(), nebiusDeepSeekR1(), sambanovaDeepseekR1()];
 
 	constructor() {
 		super(
-			'DeepSeek R1 (Together, Fireworks, Nebius)',
+			'DeepSeek R1 (Together, Fireworks, Nebius, SambaNova)',
 			'DeepSeekFallback',
-			'deepseek-r1-together-fireworks-nebius',
+			'deepseek-r1-together-fireworks-nebius-sambanova',
 			0, // Initialized later
 			() => 0,
 			() => 0,
@@ -41,20 +39,19 @@ export class DeepSeekR1_Fallbacks extends BaseLLM {
 	}
 
 	isConfigured(): boolean {
-		return this.together.isConfigured() && this.fireworks.isConfigured();
+		return this.llms.findIndex((llm) => !llm.isConfigured()) === -1;
 	}
 
 	async generateTextFromMessages(messages: LlmMessage[], opts?: GenerateTextOptions): Promise<string> {
-		try {
-			return await this.together.generateText(messages, { ...opts, maxRetries: 0 });
-		} catch (e) {
-			const errMsg = e.statuCode === '429' ? 'rate limited' : `error: ${e.message}`;
-			logger.error(`Together DeepSeek ${errMsg}`);
+		for (const llm of this.llms) {
+			if (!llm.isConfigured()) continue;
+
 			try {
-				return await this.fireworks.generateText(messages, opts);
-			} catch (e) {
-				return await this.nebius.generateText(messages, opts);
+				return await llm.generateText(messages, opts);
+			} catch (error) {
+				logger.error(`Error with ${llm.getDisplayName()}: ${error.message}. Trying next provider.`);
 			}
 		}
+		throw new Error('All DeepSeek R1 providers failed.');
 	}
 }

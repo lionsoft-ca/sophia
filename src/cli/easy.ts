@@ -6,8 +6,8 @@ import { agentContext, agentContextStorage, createContext } from '#agent/agentCo
 import { AgentContext } from '#agent/agentContextTypes';
 import { Blueberry } from '#llm/multi-agent/blueberry';
 import { mockLLMs } from '#llm/services/mock-llm';
-import { Gemini_1_5_Flash } from '#llm/services/vertexai';
-import { initApplicationContext, initFirestoreApplicationContext } from '../applicationContext';
+import { Gemini_2_0_Flash } from '#llm/services/vertexai';
+import { initApplicationContext } from '../applicationContext';
 import { parseProcessArgs } from './cli';
 
 // See https://arxiv.org/html/2405.19616v1 https://github.com/autogenai/easy-problems-that-llms-get-wrong
@@ -35,7 +35,7 @@ async function main() {
 	console.log(`${questions.length} questions with score 0`);
 
 	// writeFileSync('easy.jsonl', '');
-	const flash = Gemini_1_5_Flash();
+	const flash = Gemini_2_0_Flash();
 	let lastCost = 0;
 	const blueberry = new Blueberry();
 	for (const question of questions) {

@@ -1,10 +1,10 @@
 import { BaseLLM } from '#llm/base-llm';
 import { GenerateTextOptions, LLM, LlmMessage, userContentText } from '#llm/llm';
 import { getLLM } from '#llm/llmFactory';
-import { DeepSeekR1_Together_Fireworks } from '#llm/multi-agent/deepSeekR1_Fallbacks';
+import { DeepSeekR1_Together_Fireworks_Nebius_SambaNova } from '#llm/multi-agent/deepSeekR1_Fallbacks';
 import { Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
 import { deepSeekR1, deepSeekV3 } from '#llm/services/deepseek';
-import { fireworksDeepSeek, fireworksDeepSeekR1 } from '#llm/services/fireworks';
+import { fireworksDeepSeekR1, fireworksDeepSeekV3 } from '#llm/services/fireworks';
 import { openAIo1, openAIo3mini } from '#llm/services/openai';
 import { togetherDeepSeekR1 } from '#llm/services/together';
 import { Gemini_2_0_Flash_Thinking } from '#llm/services/vertexai';
@@ -31,8 +31,8 @@ export function MoA_reasoningLLMRegistry(): Record<string, () => LLM> {
 export function Together_R1x3_Together_Fireworks(): LLM {
 	return new ReasonerDebateLLM(
 		'R1x3-Together-Fireworks',
-		DeepSeekR1_Together_Fireworks,
-		[DeepSeekR1_Together_Fireworks, DeepSeekR1_Together_Fireworks, DeepSeekR1_Together_Fireworks],
+		DeepSeekR1_Together_Fireworks_Nebius_SambaNova,
+		[DeepSeekR1_Together_Fireworks_Nebius_SambaNova, DeepSeekR1_Together_Fireworks_Nebius_SambaNova, DeepSeekR1_Together_Fireworks_Nebius_SambaNova],
 		'MoA R1x3 (Together, Fireworks)',
 	);
 }
@@ -41,7 +41,7 @@ export function MoA_Sonnet__Sonnet_R1_o3mini(): LLM {
 	return new ReasonerDebateLLM(
 		'Sonnet_Sonnet,o3-mini,R1',
 		Claude3_5_Sonnet_Vertex,
-		[DeepSeekR1_Together_Fireworks, openAIo3mini, Claude3_5_Sonnet_Vertex],
+		[DeepSeekR1_Together_Fireworks_Nebius_SambaNova, openAIo3mini, Claude3_5_Sonnet_Vertex],
 		'MoA:Sonnet-Sonnet,o3-mini,R1(Together, Fireworks)',
 	);
 }

@@ -13,7 +13,7 @@ import { Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
 import { defaultLLMs } from '#llm/services/defaultLlms';
 import { groqLlama3_3_70B } from '#llm/services/groq';
 import { openAIo1 } from '#llm/services/openai';
-import { Gemini_1_5_Flash } from '#llm/services/vertexai';
+import { Gemini_2_0_Flash } from '#llm/services/vertexai';
 import { logger } from '#o11y/logger';
 import { sleep } from '#utils/async-utils';
 import { appContext, initFirestoreApplicationContext } from '../applicationContext';
@@ -91,7 +91,7 @@ async function answerGaiaQuestion(task: GaiaQuestion): Promise<GaiaResult> {
 			initialPrompt: prompt,
 			// llms: ClaudeVertexLLMs(),
 			llms: {
-				easy: Gemini_1_5_Flash(),
+				easy: Gemini_2_0_Flash(),
 				medium: groqLlama3_3_70B(),
 				hard: Claude3_5_Sonnet_Vertex(),
 				xhard: openAIo1(),

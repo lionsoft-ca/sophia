@@ -10,6 +10,7 @@ export interface LLMServicesConfig {
 	groqKey?: string;
 	nebiusKey?: string;
 	openaiKey?: string;
+	sambanovaKey?: string;
 	togetheraiKey?: string;
 	xaiKey?: string;
 }

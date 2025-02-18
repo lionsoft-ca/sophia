@@ -17,6 +17,7 @@ import { nebiusLLMRegistry } from '#llm/services/nebius';
 import { ollamaLLMRegistry } from '#llm/services/ollama';
 import { openAiLLMRegistry } from '#llm/services/openai';
 import { perplexityLLMRegistry } from '#llm/services/perplexity-llm';
+import { sambanovaLLMRegistry } from '#llm/services/sambanova';
 import { togetherLLMRegistry } from '#llm/services/together';
 import { vertexLLMRegistry } from '#llm/services/vertexai';
 import { xaiLLMRegistry } from '#llm/services/xai';
@@ -36,6 +37,7 @@ export const LLM_FACTORY: Record<string, () => LLM> = {
 	...perplexityLLMRegistry(),
 	...xaiLLMRegistry(),
 	...nebiusLLMRegistry(),
+	...sambanovaLLMRegistry(),
 	...ollamaLLMRegistry(),
 	...deepSeekFallbackRegistry(),
 	...blueberryLLMRegistry(),

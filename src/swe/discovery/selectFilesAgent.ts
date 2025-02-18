@@ -95,7 +95,8 @@ The final part of the response should be a JSON object in the following format:
 If you believe that you have all the files required for the requirements task/query, then return an empty array for inspectFiles.
 `;
 	// Do not include file contents unless they have been provided to you.
-	const initialUserPrompt = `<requirements>\n${requirements}\n</requirements>
+	const initialUserPrompt = `${repositoryOverview}${fileSystemWithSummaries}
+<requirements>\n${requirements}\n</requirements>
 
 # Initial Response Instructions
 
@@ -114,7 +115,7 @@ For this initial file selection step respond in the following format:
 </json>
 `;
 	return [
-		{ role: 'system', content: systemPrompt, cache: 'ephemeral' },
+		// { role: 'system', content: systemPrompt, cache: 'ephemeral' },
 		{ role: 'user', content: initialUserPrompt, cache: 'ephemeral' },
 	];
 }
