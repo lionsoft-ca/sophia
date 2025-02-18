@@ -39,6 +39,6 @@ export class DeepSeekLLM extends AiLLM<DeepSeekProvider> {
 	}
 
 	protected apiKey(): string | undefined {
-		return currentUser().llmConfig.deepseekKey || envVar('DEEPSEEK_API_KEY');
+		return currentUser().llmConfig.deepseekKey || process.env.DEEPSEEK_API_KEY;
 	}
 }

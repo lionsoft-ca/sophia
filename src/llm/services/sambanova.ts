@@ -11,7 +11,7 @@ export function sambanovaLLMRegistry(): Record<string, () => LLM> {
 	return {
 		'sambanova:DeepSeek-R1': sambanovaDeepseekR1,
 		'sambanova:DeepSeek-R1-Distill-Llama-70B': sambanovaLlama3_3_70b_R1_Distill,
-		'sambanova:llama-3.3-70b': sambanovaLlama3_3_70b,
+		'sambanova:Meta-Llama-3.3-70B-Instruct': sambanovaLlama3_3_70b,
 	};
 }
 
@@ -43,6 +43,6 @@ export class SambanovaLLM extends AiLLM<OpenAIProvider> {
 	}
 
 	protected apiKey(): string | undefined {
-		return currentUser().llmConfig.sambanovaKey || envVar('SAMBANOVA_API_KEY');
+		return currentUser().llmConfig.sambanovaKey || process.env.SAMBANOVA_API_KEY;
 	}
 }

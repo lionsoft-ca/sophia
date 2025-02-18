@@ -69,10 +69,14 @@ export class PerplexityLLM extends BaseLLM {
 		this.costPerPromptToken = costPerPromptToken;
 		this.costPerCompletionToken = costPerCompletionToken;
 		this.onlineCost = onlineCost;
-		this.openai = new OpenAI({
+	}
+
+	private api(): OpenAI {
+		this.openai ??= new OpenAI({
 			apiKey: functionConfig(Perplexity).key || envVar('PERPLEXITY_KEY'),
 			baseURL: 'https://api.perplexity.ai',
 		});
+		return this.openai;
 	}
 
 	isConfigured(): boolean {
@@ -131,7 +135,7 @@ export class PerplexityLLM extends BaseLLM {
 			const requestTime = Date.now();
 
 			try {
-				const response = await this.openai.chat.completions.create({
+				const response = await this.api().chat.completions.create({
 					model: this.model,
 					messages: apiMessages,
 					stream: false,

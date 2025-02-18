@@ -38,6 +38,6 @@ export class CerebrasLLM extends AiLLM<OpenAIProvider> {
 	}
 
 	protected apiKey(): string | undefined {
-		return currentUser().llmConfig.cerebrasKey || envVar('CEREBRAS_API_KEY');
+		return currentUser().llmConfig.cerebrasKey || process.env.CEREBRAS_API_KEY;
 	}
 }
