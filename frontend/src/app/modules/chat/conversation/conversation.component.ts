@@ -227,7 +227,13 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
 
     ngAfterViewInit() {
         setTimeout(() => {
-            this.messageInput.nativeElement.focus();
+            if(this.messageInput)
+                this.messageInput.nativeElement.focus();
+            else {
+                setTimeout(() => {
+                    this.messageInput.nativeElement.focus();
+                }, 1000); // Small delay to ensure its displayed
+            }
         }, 500); // Small delay to ensure its displayed
     }
 

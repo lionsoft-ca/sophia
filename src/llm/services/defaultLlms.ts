@@ -8,6 +8,7 @@ import { Gemini_2_0_Flash } from '#llm/services/vertexai';
 let _summaryLLM: LLM;
 
 export function summaryLLM(): LLM {
+	if (!_summaryLLM) defaultLLMs();
 	return _summaryLLM;
 }
 

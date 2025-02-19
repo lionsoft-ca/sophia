@@ -1,7 +1,6 @@
 import { OpenAIProvider, createOpenAI } from '@ai-sdk/openai';
 import { InputCostFunction, OutputCostFunction, perMilTokens } from '#llm/base-llm';
 import { currentUser } from '#user/userService/userContext';
-import { envVar } from '#utils/env-var';
 import { LLM } from '../llm';
 import { AiLLM } from './ai-llm';
 

@@ -63,6 +63,7 @@ Then you can select additional files to read and inspect if required from the <p
 
 ## Response Format
 Your response must finish in the following format:
+<think>
 <observations-to-requirements>
 </observations-to-requirements>
 <keep-ignore-thinking>
@@ -72,6 +73,7 @@ Your response must finish in the following format:
 </select-files-thinking>
 <requirements-solution-thinking>
 </requirements-solution-thinking>
+</think>
 <json>
 </json>
 
@@ -328,7 +330,7 @@ ${query}
 Please provide a detailed answer to the query using the information from the available file contents, and including citations to the files where the relevant information was found.
 Respond in the following format (Note only the contents of the result tag will be returned to the user):
 
-<thinking></thinking>
+<think></think>
 <reflection></reflection>
 <result></result>                                                                                                                                                                                                                                                                                 
  `;

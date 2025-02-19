@@ -11,7 +11,7 @@ import { logger } from '#o11y/logger';
 
 export function blueberryLLMRegistry(): Record<string, () => LLM> {
 	return {
-		'MoA blueberry:': () => new Blueberry(),
+		'MoA:blueberry': () => new Blueberry(),
 	};
 }
 
