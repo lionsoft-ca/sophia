@@ -8,7 +8,7 @@
                 <button
                     mat-flat-button
                     [color]="'primary'"
-                    [routerLink]="['new']"
+                    (click)="createNewChat()"
                 >
                     <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                     <span class="ml-2 mr-1">New Chat</span>
