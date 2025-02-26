@@ -57,7 +57,8 @@ export class FirestoreLlmCallService implements LlmCallService {
 		if (messages.at(-1).role === 'assistant') {
 			messages.pop();
 		}
-		messages.push({ role: 'assistant', content: llmCall.responseText });
+		// Don't modify the messages array that's passed in to LLM.generateText etc
+		llmCall.messages = [...messages, { role: 'assistant', content: llmCall.responseText }];
 		llmCall.responseText = undefined;
 
 		const llmResponseDocRef = this.db.doc(`LlmCall/${llmCall.id}`);
