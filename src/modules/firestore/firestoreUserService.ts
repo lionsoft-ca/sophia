@@ -66,6 +66,7 @@ export class FirestoreUserService implements UserService {
 			...data,
 			id,
 		};
+		if (!user.functionConfig) user.functionConfig = {};
 		if (!user.chat) {
 			user.chat = {
 				enabledLLMs: {},

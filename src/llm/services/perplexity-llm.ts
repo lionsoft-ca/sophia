@@ -87,7 +87,7 @@ export class PerplexityLLM extends BaseLLM {
 	}
 
 	isConfigured(): boolean {
-		return Boolean(functionConfig(Perplexity).key || process.env.PERPLEXITY_KEY);
+		return Boolean(functionConfig(Perplexity)?.key || process.env.PERPLEXITY_KEY);
 	}
 
 	protected supportsGenerateTextFromMessages(): boolean {
