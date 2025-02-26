@@ -39,7 +39,7 @@
 
         <!-- Chats -->
         <div class="flex-auto overflow-y-auto">
-            @if (filteredChats.length > 0) {
+            @if (filteredChats && filteredChats.length > 0) {
                 @for (
                     chat of filteredChats;
                     track trackByFn($index, chat)
