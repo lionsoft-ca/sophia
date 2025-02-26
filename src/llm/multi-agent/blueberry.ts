@@ -84,8 +84,8 @@ export class Blueberry extends BaseLLM {
 	 */
 	constructor(model = 'default') {
 		super(
+			'MoA blueberry',
 			'MoA',
-			'blueberry',
 			model,
 			200_000,
 			() => 0,

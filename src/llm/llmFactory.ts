@@ -1,6 +1,5 @@
 import { AgentLLMs } from '#agent/agentContextTypes';
 import { LLM } from '#llm/llm';
-import { blueberryLLMRegistry } from '#llm/multi-agent/blueberry';
 import { CePO_LLMRegistry } from '#llm/multi-agent/cepo';
 import { deepSeekFallbackRegistry } from '#llm/multi-agent/deepSeekR1_Fallbacks';
 import { MoA_reasoningLLMRegistry } from '#llm/multi-agent/reasoning-debate';
@@ -40,7 +39,6 @@ export const LLM_FACTORY: Record<string, () => LLM> = {
 	...sambanovaLLMRegistry(),
 	...ollamaLLMRegistry(),
 	...deepSeekFallbackRegistry(),
-	...blueberryLLMRegistry(),
 	...MoA_reasoningLLMRegistry(),
 	...CePO_LLMRegistry(),
 	...mockLLMRegistry(),
