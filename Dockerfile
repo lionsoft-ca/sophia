@@ -1,13 +1,16 @@
 # Production Dockerfile
-FROM python:3.11
+FROM python:3.11-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-#COPY .nvmrc .
-# $(cat .nvmrc)
+# Update package lists without signature verification to avoid "At least one invalid signature was encountered." on debian repos
+RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update
+
+# make g++ gcc build-essential are needed for node-gyp
+RUN apt-get install -y curl make g++ gcc build-essential
 RUN curl -sL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh
-RUN chmod +x ./nodesource_setup.sh && ./nodesource_setup.sh
-RUN apt install -y nodejs
+RUN bash ./nodesource_setup.sh
+RUN apt-get install -y nodejs
 
 RUN pip install aider-chat
 
