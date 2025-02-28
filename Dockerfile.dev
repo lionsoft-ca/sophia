@@ -7,7 +7,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get -o Acquire::Check-Valid-Until=false -o Acquire::AllowInsecureRepositories=true -o Acquire::AllowDowngradeToInsecureRepositories=true update
 
 # make g++ gcc build-essential are needed for node-gyp
-RUN apt-get install -y curl make g++ gcc build-essential
+RUN apt-get install -y curl make g++ gcc build-essential git
 RUN curl -sL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh
 RUN bash ./nodesource_setup.sh
 RUN apt-get install -y nodejs
