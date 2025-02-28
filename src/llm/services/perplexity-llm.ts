@@ -135,8 +135,7 @@ export class PerplexityLLM extends BaseLLM {
 			});
 
 			const llmCallSave: Promise<LlmCall> = appContext().llmCallService.saveRequest({
-				userPrompt: lastUserMessage?.content as string,
-				systemPrompt: systemMessage?.content as string,
+				messages,
 				llmId: this.getId(),
 				userId: currentUser().id,
 				agentId: agentContext()?.agentId,
