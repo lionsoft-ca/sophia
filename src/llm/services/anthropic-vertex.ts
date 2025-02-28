@@ -248,10 +248,14 @@ class AnthropicVertexLLM extends BaseLLM {
 				// Streaming is required when max_tokens is greater than 21,333
 				// For thinking budgets above 32K: We recommend using batch processing
 				let thinking: Anthropic.Messages.ThinkingConfigEnabled | undefined = undefined;
-				if (opts?.thinking === 'low') thinking = { type: 'enabled', budget_tokens: 1024 };
-				else if (opts?.thinking === 'medium') thinking = { type: 'enabled', budget_tokens: 6000 };
-				else if (opts?.thinking === 'high') thinking = { type: 'enabled', budget_tokens: 13000 };
-				if (thinking) maxOutputTokens += thinking.budget_tokens;
+				if (opts?.thinking && this.getModel().includes('claude-3-7')) {
+					// if(console.log)opts.thinking = 'high'
+					let budget = 1024; // low
+					if (opts.thinking === 'medium') budget = 6000;
+					if (opts.thinking === 'high') budget = 13000;
+					thinking = { type: 'enabled', budget_tokens: budget };
+					maxOutputTokens += thinking.budget_tokens;
+				}
 
 				message = await this.api().messages.create({
 					system: systemMessage,

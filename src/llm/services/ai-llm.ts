@@ -78,11 +78,17 @@ export abstract class AiLLM<Provider extends ProviderV1> extends BaseLLM {
 				// https://sdk.vercel.ai/docs/guides/sonnet-3-7#reasoning-ability
 				// https://sdk.vercel.ai/docs/guides/o3#refining-reasoning-effort
 				if (opts?.thinking) {
-					experimental.openai = { reasoningEffort: opts.thinking };
-					const budgetTokens = opts.thinking === 'low' ? 1024 : opts.thinking === 'medium' ? 6000 : 13000;
-					experimental.anthropic = {
-						thinking: { type: 'enabled', budgetTokens },
-					};
+					if (this.getService() === 'openai' && this.model.startsWith('o')) experimental.openai = { reasoningEffort: opts.thinking };
+
+					if (this.getModel().includes('claude-3-7')) {
+						let budgetTokens = 1024; // low
+						if (opts.thinking === 'medium') budgetTokens = 6000;
+						if (opts.thinking === 'high') budgetTokens = 13000;
+						experimental.anthropic = {
+							thinking: { type: 'enabled', budgetTokens },
+						};
+						// maxOutputTokens += budgetTokens;
+					}
 				}
 
 				const result: GenerateTextResult<any, any> = await aiGenerateText({
