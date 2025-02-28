@@ -87,7 +87,7 @@ class AnthropicVertexLLM extends BaseLLM {
 	}
 
 	isConfigured(): boolean {
-		return Boolean(currentUser().llmConfig.vertexRegion || process.env.GCLOUD_CLAUDE_REGION || process.env.GCLOUD_REGION);
+		return Boolean(currentUser().llmConfig.vertexRegion || process.env.GCLOUD_REGION);
 	}
 
 	protected supportsGenerateTextFromMessages(): boolean {
