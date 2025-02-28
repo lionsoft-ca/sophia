@@ -4,7 +4,11 @@ import { FileSystemService } from './fileSystemService';
 
 describe('FileSystem', () => {
 	describe.skip('setWorkingDirectory with fakePath', () => {
-		const fileSystem = new FileSystemService('/basePath');
+		let fileSystem = new FileSystemService('/basePath');
+		beforeEach(() => {
+			fileSystem = new FileSystemService('/basePath');
+		});
+
 		it('should be able to set a path from the baseDir when the new working directory starts with /', async () => {
 			fileSystem.setWorkingDirectory('/otherWorkDir');
 			fileSystem.setWorkingDirectory('/newWorkDir');
