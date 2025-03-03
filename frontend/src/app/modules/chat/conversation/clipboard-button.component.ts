@@ -1,24 +1,23 @@
-import { ChangeDetectionStrategy, Component, ViewEncapsulation} from "@angular/core";
+import {ChangeDetectionStrategy, Component, Input, input, ViewEncapsulation} from "@angular/core";
 import {MatButtonModule} from "@angular/material/button";
 import {MatIconModule} from "@angular/material/icon";
 import {MatTooltip} from "@angular/material/tooltip";
 
 @Component({
-    selector: 'markdown-clipboard',
+    selector: 'clipboard-button',
     template: `<button mat-icon-button
                        [matTooltip]="'Copy to clipboard'"
-                       class="mat-primary copy-to-clipboard"
+                       class="mat-primary clipboard-button"
+                       [style]="{top:offset + 'em', right: offset + 'em'}"
                        aria-label="Copy to clipboard">
         <mat-icon [svgIcon]="'content_paste'" class="icon-size-4"></mat-icon>
     </button>`,
-    styles: `button.copy-to-clipboard {
+    styles: `button.clipboard-button {
       position: absolute;
-      top: -0.6em;
-      right: -0.5em;
       z-index: 1;
-      opacity: 40%;
+      opacity: 30%;
     }
-    button.copy-to-clipboard:hover {
+    button.clipboard-button:hover {
       opacity: 100%;
     }`,
     encapsulation: ViewEncapsulation.None,
@@ -30,4 +29,6 @@ import {MatTooltip} from "@angular/material/tooltip";
         MatTooltip
     ],
 })
-export class ClipboardButtonComponent {}
+export class ClipboardButtonComponent {
+    @Input() offset: number = -0.6
+}

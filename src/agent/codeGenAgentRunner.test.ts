@@ -1,26 +1,17 @@
 import { expect } from 'chai';
 import sinon from 'sinon';
 import { LlmFunctions } from '#agent/LlmFunctions';
-import { AgentContext, AgentLLMs } from '#agent/agentContextTypes';
-import { AGENT_REQUEST_FEEDBACK } from '#agent/agentFeedback';
+import { AgentContext } from '#agent/agentContextTypes';
+import { AGENT_REQUEST_FEEDBACK, AgentFeedback } from '#agent/agentFeedback';
 import { AGENT_COMPLETED_NAME, AGENT_SAVE_MEMORY } from '#agent/agentFunctions';
-import {
-	RunAgentConfig,
-	SUPERVISOR_CANCELLED_FUNCTION_NAME,
-	SUPERVISOR_RESUMED_FUNCTION_NAME,
-	cancelAgent,
-	provideFeedback,
-	startAgent,
-	startAgentAndWait,
-} from '#agent/agentRunner';
+import { RunAgentConfig, SUPERVISOR_CANCELLED_FUNCTION_NAME, cancelAgent, provideFeedback, startAgent, startAgentAndWait } from '#agent/agentRunner';
 import { convertTypeScriptToPython } from '#agent/codeGenAgentUtils';
-import { TEST_FUNC_NOOP, TEST_FUNC_SKY_COLOUR, TEST_FUNC_SUM, TEST_FUNC_THROW_ERROR, THROW_ERROR_TEXT, TestFunctions } from '#functions/testFunctions';
+import { TEST_FUNC_NOOP, TEST_FUNC_SKY_COLOUR, TEST_FUNC_SUM, TEST_FUNC_THROW_ERROR, TestFunctions } from '#functions/testFunctions';
 import { MockLLM, mockLLM, mockLLMs } from '#llm/services/mock-llm';
 import { logger } from '#o11y/logger';
 import { setTracer } from '#o11y/trace';
-import { User } from '#user/user';
 import { sleep } from '#utils/async-utils';
-import { appContext, applicationContext, initInMemoryApplicationContext } from '../applicationContext';
+import { appContext, initInMemoryApplicationContext } from '../applicationContext';
 import { agentContextStorage } from './agentContextLocalStorage';
 
 const PY_AGENT_COMPLETED = (note: string) => `await ${AGENT_COMPLETED_NAME}("${note}")`;
@@ -42,7 +33,7 @@ const SKY_COLOUR_FUNCTION_CALL_PLAN = `<response>\n<plan>Get the sky colour</pla
 describe('codegenAgentRunner', () => {
 	const ctx = initInMemoryApplicationContext();
 
-	let functions = new LlmFunctions();
+	let functions: LlmFunctions;
 	const AGENT_NAME = 'test';
 
 	function runConfig(runConfig?: Partial<RunAgentConfig>): RunAgentConfig {
@@ -86,7 +77,7 @@ describe('codegenAgentRunner', () => {
 		// This is needed for the tests on the LlmCall.callStack property
 		setTracer(null, agentContextStorage);
 		mockLLM.reset();
-		functions = new LlmFunctions();
+		functions = new LlmFunctions(AgentFeedback);
 	});
 
 	afterEach(() => {

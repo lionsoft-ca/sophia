@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { convertCitationsToMarkdownLinks } from './perplexity-llm';
 
-describe.only('convertCitationsToMarkdownLinks function', () => {
+describe('convertCitationsToMarkdownLinks function', () => {
 	it('should replace citation IDs with markdown links', () => {
 		const reportText = 'something because this [2] and that [3]';
 		const citations = ['First Citation', 'Second Citation', 'Third Citation'];

@@ -6,9 +6,9 @@ export interface LlmRequest {
 	id: string;
 	/** From the GenerateTextOptions.id field */
 	description?: string;
-	/** Legacy simple prompting */
+	/** @deprecated Legacy simple prompting. Use #{messages} */
 	systemPrompt?: string;
-	/** Legacy simple prompting */
+	/** @deprecated Legacy simple prompting. Use #{messages} */
 	userPrompt?: string;
 
 	messages?: LlmMessage[];

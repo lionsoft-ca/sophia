@@ -74,17 +74,17 @@ export abstract class AiLLM<Provider extends ProviderV1> extends BaseLLM {
 
 			const requestTime = Date.now();
 			try {
-				const experimental: any = {};
+				const providerOptions: any = {};
 				// https://sdk.vercel.ai/docs/guides/sonnet-3-7#reasoning-ability
 				// https://sdk.vercel.ai/docs/guides/o3#refining-reasoning-effort
 				if (opts?.thinking) {
-					if (this.getService() === 'openai' && this.model.startsWith('o')) experimental.openai = { reasoningEffort: opts.thinking };
+					if (this.getService() === 'openai' && this.model.startsWith('o')) providerOptions.openai = { reasoningEffort: opts.thinking };
 
 					if (this.getModel().includes('claude-3-7')) {
 						let budgetTokens = 1024; // low
 						if (opts.thinking === 'medium') budgetTokens = 6000;
 						if (opts.thinking === 'high') budgetTokens = 13000;
-						experimental.anthropic = {
+						providerOptions.anthropic = {
 							thinking: { type: 'enabled', budgetTokens },
 						};
 						// maxOutputTokens += budgetTokens;
@@ -101,14 +101,14 @@ export abstract class AiLLM<Provider extends ProviderV1> extends BaseLLM {
 					presencePenalty: opts?.presencePenalty,
 					stopSequences: opts?.stopSequences,
 					maxRetries: opts?.maxRetries,
-					experimental_providerMetadata: experimental,
+					providerOptions,
 				});
 
 				const responseText = result.text;
 				const finishTime = Date.now();
 				const llmCall: LlmCall = await llmCallSave;
 
-				const inputCost = this.calculateInputCost('', result.usage.promptTokens, result.experimental_providerMetadata);
+				const inputCost = this.calculateInputCost('', result.usage.promptTokens, result.providerMetadata);
 				const outputCost = this.calculateOutputCost(responseText, result.usage.completionTokens);
 				const cost = inputCost + outputCost;
 

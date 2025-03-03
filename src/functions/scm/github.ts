@@ -199,14 +199,14 @@ export class GitHub implements SourceControlManagement {
 			const response = await this.request()('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs', {
 				owner,
 				repo,
-				job_id: jobId,
+				job_id: Number(jobId),
 				headers: {
 					Accept: 'application/vnd.github+json',
 					'X-GitHub-Api-Version': '2022-11-28',
 				},
 			});
-
-			return response.data;
+			if (typeof response.data === 'string') return response.data;
+			return JSON.stringify(response.data);
 		} catch (error) {
 			logger.error(`Failed to get job logs for job ${jobId} in project ${projectPath}`, error);
 			throw new Error(`Failed to get job logs: ${error.message}`);
