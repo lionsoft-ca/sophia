@@ -111,7 +111,10 @@
                                 >
                                     <!-- Message -->
                                     <div class="min-w-4 leading-5">
-                                        <clipboard-button [offset]="-0.3" [cdkCopyToClipboard]="message.content"></clipboard-button>
+                                        @if (!message.generating) {
+                                            <clipboard-button [offset]="-0.3" [cdkCopyToClipboard]="message.content"></clipboard-button>
+                                        }
+
                                         <markdown
                                             mermaid
                                             clipboard
