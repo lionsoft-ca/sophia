@@ -58,7 +58,7 @@ export function startSpan(spanName: string): Span {
 }
 
 export function getActiveSpan(): Span | undefined {
-	return trace.getActiveSpan();
+	return tracer ? trace.getActiveSpan() : fakeSpan;
 }
 
 /**
