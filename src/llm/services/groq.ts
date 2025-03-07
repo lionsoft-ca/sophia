@@ -10,6 +10,7 @@ export function groqLLMRegistry(): Record<string, () => LLM> {
 	return {
 		'groq:llama-3.3-70b-versatile': groqLlama3_3_70B,
 		'groq:deepseek-r1-distill-llama-70b': groqLlama3_3_70B_R1_Distill,
+		'groq:qwen-qwq-32b': groqQwenQwq32b,
 	};
 }
 
@@ -35,6 +36,14 @@ $5.00/$5.00
 */
 export function groqLlama3_3_70B_R1_Distill(): LLM {
 	return new GroqLLM('Llama3.3 70b R1 Distill (Groq)', 'deepseek-r1-distill-llama-70b', 128_000, perMilTokens(0.59), perMilTokens(0.79));
+}
+
+/**
+ * Qwen QWQ 32B model from Groq
+ * Pricing: $0.29/M input tokens, $0.39/M output tokens
+ */
+export function groqQwenQwq32b(): LLM {
+	return new GroqLLM('Qwen QWQ 32b (Groq)', 'qwen-qwq-32b', 128_000, perMilTokens(0.29), perMilTokens(0.39));
 }
 
 export function groqQwen_32b_R1_Distill(): LLM {

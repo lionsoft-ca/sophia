@@ -24,7 +24,7 @@ export function togetherLlama3_70B_R1_Distill(): LLM {
 }
 
 export function togetherDeepSeekR1(): LLM {
-	return new TogetherLLM('DeepSeek R1 (Together)', 'deepseek-ai/DeepSeek-R1', 64000, perMilTokens(7), perMilTokens(7));
+	return new TogetherLLM('DeepSeek R1 (Together)', 'deepseek-ai/DeepSeek-R1', 64000, perMilTokens(3), perMilTokens(7));
 }
 
 type TogetherAIProviderV1 = TogetherAIProvider & {
