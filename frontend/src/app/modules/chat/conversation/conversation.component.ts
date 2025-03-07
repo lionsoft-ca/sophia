@@ -416,14 +416,16 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.messageInput.nativeElement.value = '';
                 this.selectedFiles = [];
 
+                const options = {...user.chat, thinking: this.llmHasThinkingLevels ? this.thinkingLevel : null }
+
                 // If this is a new chat, create it with latest user preferences
                 if (!this.chat.id || this.chat.id === 'new') {
                     this._changeDetectorRef.markForCheck();
-                    return this._chatService.createChat(message, this.llmId, user?.chat, attachments);
+                    return this._chatService.createChat(message, this.llmId, options, attachments);
                 }
 
                 this._scrollToBottom();
-                return this._chatService.sendMessage(this.chat.id, message, this.llmId, user?.chat, attachments);
+                return this._chatService.sendMessage(this.chat.id, message, this.llmId, options, attachments);
             })
         ).subscribe({
             next: (chat: Chat) => {
@@ -550,6 +552,9 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
         }
         if (event.key === 'i' && event.ctrlKey) {
             this.drawerOpened = !this.drawerOpened
+        }
+        if (event.key === 't' && event.ctrlKey && this.llmHasThinkingLevels) {
+            this.toggleThinking();
         }
     }
 
