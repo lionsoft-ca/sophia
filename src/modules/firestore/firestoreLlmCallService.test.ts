@@ -1,11 +1,11 @@
 import axios from 'axios';
 import { expect } from 'chai';
 import sinon from 'sinon';
-import { logger } from '#o11y/logger';
-
+import { system, user } from '#llm/llm';
 import { CreateLlmRequest, LlmCall } from '#llm/llmCallService/llmCall';
 import { LlmCallService } from '#llm/llmCallService/llmCallService';
 import { FirestoreLlmCallService } from '#modules/firestore/firestoreLlmCallService';
+import { logger } from '#o11y/logger';
 
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST;
 
@@ -43,8 +43,7 @@ describe('FirestoreLlmCallService', () => {
 	describe('saveRequest and getCall', () => {
 		it('should save a request and retrieve it', async () => {
 			const request: CreateLlmRequest = {
-				userPrompt: 'Test user prompt',
-				systemPrompt: 'Test system prompt',
+				messages: [system('Test system prompt'), user('Test user prompt')],
 				description: 'Test description',
 				llmId: 'test-llm',
 				agentId: 'test-agent',
@@ -57,8 +56,10 @@ describe('FirestoreLlmCallService', () => {
 
 			const retrievedCall = await service.getCall(savedRequest.id);
 			expect(retrievedCall).to.not.be.null;
-			expect(retrievedCall.userPrompt).to.equal(request.userPrompt);
-			expect(retrievedCall.systemPrompt).to.equal(request.systemPrompt);
+			expect(retrievedCall.messages[0].role).to.equal(request.messages[0].role);
+			expect(retrievedCall.messages[0].content).to.equal(request.messages[0].content);
+			expect(retrievedCall.messages[1].role).to.equal(request.messages[1].role);
+			expect(retrievedCall.messages[1].content).to.equal(request.messages[1].content);
 			expect(retrievedCall.description).to.equal(request.description);
 			expect(retrievedCall.llmId).to.equal(request.llmId);
 			expect(retrievedCall.agentId).to.equal(request.agentId);
@@ -69,8 +70,7 @@ describe('FirestoreLlmCallService', () => {
 	describe('saveResponse', () => {
 		it('should save a response and retrieve it', async () => {
 			const request: CreateLlmRequest = {
-				userPrompt: 'Test user prompt',
-				systemPrompt: 'Test system prompt',
+				messages: [system('Test system prompt'), user('Test user prompt')],
 				description: 'Test description',
 				llmId: 'test-llm',
 				agentId: 'test-agent',
@@ -92,8 +92,10 @@ describe('FirestoreLlmCallService', () => {
 			const retrievedCall = await service.getCall(savedRequest.id);
 			expect(retrievedCall).to.not.be.null;
 			expect(retrievedCall.id).to.equal(response.id);
-			expect(retrievedCall.userPrompt).to.equal(response.userPrompt);
-			expect(retrievedCall.systemPrompt).to.equal(response.systemPrompt);
+			expect(retrievedCall.messages[0].role).to.equal(response.messages[0].role);
+			expect(retrievedCall.messages[0].content).to.equal(response.messages[0].content);
+			expect(retrievedCall.messages[1].role).to.equal(response.messages[1].role);
+			expect(retrievedCall.messages[1].content).to.equal(response.messages[1].content);
 			expect(retrievedCall.description).to.equal(response.description);
 			expect(retrievedCall.llmId).to.equal(response.llmId);
 			expect(retrievedCall.agentId).to.equal(request.agentId);
@@ -111,16 +113,14 @@ describe('FirestoreLlmCallService', () => {
 			const requests: CreateLlmRequest[] = [
 				{
 					agentId,
-					userPrompt: 'Test user prompt 1',
-					systemPrompt: 'Test system prompt 1',
+					messages: [system('Test system prompt'), user('Test user prompt')],
 					description: 'Test description 1',
 					llmId: 'test-llm-1',
 					callStack: 'test > call > stack',
 				},
 				{
 					agentId,
-					userPrompt: 'Test user prompt 2',
-					systemPrompt: 'Test system prompt 2',
+					messages: [system('Test system prompt'), user('Test user prompt')],
 					description: 'Test description 2',
 					llmId: 'test-llm-2',
 					callStack: 'test > call > stack',
@@ -131,7 +131,7 @@ describe('FirestoreLlmCallService', () => {
 				const savedRequest = await service.saveRequest(request);
 				await service.saveResponse({
 					...savedRequest,
-					responseText: `Response for ${request.userPrompt}`,
+					responseText: `Response for ${request.messages[0]}`,
 					cost: 0.1,
 					timeToFirstToken: 100,
 					totalTime: 500,
@@ -143,8 +143,7 @@ describe('FirestoreLlmCallService', () => {
 			calls.forEach((call) => {
 				expect(call).to.have.property('agentId');
 				expect(call).to.have.property('id');
-				expect(call).to.have.property('userPrompt');
-				expect(call).to.have.property('systemPrompt');
+				expect(call).to.have.property('messages');
 				expect(call).to.have.property('description');
 				expect(call).to.have.property('llmId');
 				expect(call).to.have.property('callStack');

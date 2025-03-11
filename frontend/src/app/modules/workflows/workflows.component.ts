@@ -40,7 +40,7 @@ export class WorkflowsComponent implements OnInit {
   ngOnInit() {
     this.codeForm = this.fb.group({
       workingDirectory: ['', Validators.required],
-      operationType: ['code', Validators.required],
+      workflowType: ['code', Validators.required],
       input: ['', Validators.required],
     });
 
@@ -86,11 +86,11 @@ export class WorkflowsComponent implements OnInit {
    * It also manages the loading state and error handling for all operations.
    */
   private executeOperation() {
-    const { workingDirectory, operationType, input } = this.codeForm.value;
+    const { workingDirectory, workflowType, input } = this.codeForm.value;
 
     let operation: Observable<any>;
 
-    switch (operationType) {
+    switch (workflowType) {
       case 'code':
         operation = this.workflowsService.runCodeEditWorkflow(workingDirectory, input);
         break;
@@ -108,12 +108,12 @@ export class WorkflowsComponent implements OnInit {
 
     operation.subscribe({
       next: (response: any) => {
-        this.result = operationType === 'query' ? response.response : JSON.stringify(response, null, 2);
+        this.result = workflowType === 'query' ? response.response : JSON.stringify(response, null, 2);
         this.isLoading = false;
       },
       error: (error: Error) => {
-        console.error(`Error in ${operationType} operation:`, error);
-        this.result = `Error during ${operationType} operation: ${error.message}`;
+        console.error(`Error in ${workflowType} operation:`, error);
+        this.result = `Error during ${workflowType} operation: ${error.message}`;
         this.isLoading = false;
       },
     });

@@ -7,6 +7,7 @@ import { Chat, ChatList } from '#chat/chatTypes';
 import { send, sendBadRequest } from '#fastify/index';
 import { FilePartExt, GenerateOptions, ImagePartExt, LLM, UserContentExt } from '#llm/llm';
 import { getLLM } from '#llm/llmFactory';
+import { summaryLLM } from '#llm/services/defaultLlms';
 import { logger } from '#o11y/logger';
 import { currentUser } from '#user/userService/userContext';
 import { AppFastifyInstance } from '../../server';
@@ -57,7 +58,8 @@ export async function chatRoutes(fastify: AppFastifyInstance) {
 		if (!llm.isConfigured()) return sendBadRequest(reply, `LLM ${llm.getId()} is not configured`);
 
 		const text = typeof userContent === 'string' ? userContent : userContent.find((content) => content.type === 'text')?.text;
-		const titlePromise: Promise<string> | undefined = llm.generateText(
+		const titleLLM = summaryLLM().isConfigured() ? summaryLLM() : llm;
+		const titlePromise: Promise<string> | undefined = titleLLM.generateText(
 			`<message>\n${text}\n</message>\n\n\nThe above message is the first message in a new chat conversation. Your task is to create a short title in a few words for the conversation. Respond only with the title, nothing else.`,
 		);
 

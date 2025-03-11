@@ -2,7 +2,8 @@ import { App, SayFn } from '@slack/bolt';
 import { StringIndexed } from '@slack/bolt/dist/types/helpers';
 import { getLastFunctionCallArg } from '#agent/agentCompletion';
 import { AgentCompleted, AgentContext, isExecuting } from '#agent/agentContextTypes';
-import { AGENT_COMPLETED_PARAM_NAME, REQUEST_FEEDBACK_PARAM_NAME } from '#agent/agentFunctions';
+import { REQUEST_FEEDBACK_PARAM_NAME } from '#agent/agentFeedback';
+import { AGENT_COMPLETED_PARAM_NAME } from '#agent/agentFunctions';
 import { resumeCompleted, startAgent } from '#agent/agentRunner';
 import { GoogleCloud } from '#functions/cloud/google/google-cloud';
 import { GitLab } from '#functions/scm/gitlab';
@@ -147,7 +148,7 @@ export class SlackChatBotService implements ChatBotService, AgentCompleted {
 						functions: CHATBOT_FUNCTIONS,
 						agentName: `Slack-${threadId}`,
 						systemPrompt:
-							'You are an AI support agent called Sophia.  You are responding to support requests on the company Slack account. Respond in a helpful, concise manner. If you encounter an error responding to the request do not provide details of the error to the user, only respond with "Sorry, I\'m having difficulties providing a response to your request"',
+							'You are an AI support agent called TypedAI.  You are responding to support requests on the company Slack account. Respond in a helpful, concise manner. If you encounter an error responding to the request do not provide details of the error to the user, only respond with "Sorry, I\'m having difficulties providing a response to your request"',
 						metadata: { channel: event.channel },
 						completedHandler: this,
 					});

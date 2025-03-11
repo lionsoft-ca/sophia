@@ -1,8 +1,8 @@
 import fs from 'node:fs';
 import { expect } from 'chai';
 import { LlmMessage } from '#llm/llm';
-import { Claude3_5_Haiku, Claude3_5_Sonnet } from '#llm/services/anthropic';
-import { Claude3_5_Haiku_Vertex, Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
+import { Claude3_5_Sonnet } from '#llm/services/anthropic';
+import { Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
 import { cerebrasLlama3_8b } from '#llm/services/cerebras';
 import { deepinfraQwQ_32B, deepinfraQwen2_5_Coder32B } from '#llm/services/deepinfra';
 import { deepSeekV3 } from '#llm/services/deepseek';
@@ -11,8 +11,9 @@ import { groqLlama3_3_70B } from '#llm/services/groq';
 import { nebiusDeepSeekR1 } from '#llm/services/nebius';
 import { Ollama_Phi3 } from '#llm/services/ollama';
 import { GPT4oMini } from '#llm/services/openai';
+import { sambanovaDeepseekR1, sambanovaLlama3_3_70b, sambanovaLlama3_3_70b_R1_Distill } from '#llm/services/sambanova';
 import { togetherLlama3_70B } from '#llm/services/together';
-import { Gemini_1_5_Flash, Gemini_2_0_Flash } from '#llm/services/vertexai';
+import { Gemini_2_0_Experimental, Gemini_2_0_Flash, Gemini_2_0_Flash_Lite, Gemini_2_0_Flash_Thinking } from '#llm/services/vertexai';
 
 const elephantBase64 = fs.readFileSync('test/llm/elephant.jpg', 'base64');
 const pdfBase64 = fs.readFileSync('test/llm/purple.pdf', 'base64');
@@ -182,6 +183,23 @@ describe('LLMs', () => {
 		});
 	});
 
+	describe('SambaNova', () => {
+		it.skip('DeepSeek R1 should generateText', async () => {
+			const response = await sambanovaDeepseekR1().generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
+		});
+
+		it('Llama 70b R1 Distill should generateText', async () => {
+			const response = await sambanovaLlama3_3_70b_R1_Distill().generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
+		});
+
+		it('Llama 70b should generateText', async () => {
+			const response = await sambanovaLlama3_3_70b().generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
+		});
+	});
+
 	describe('Together', () => {
 		const llm = togetherLlama3_70B();
 
@@ -192,21 +210,38 @@ describe('LLMs', () => {
 	});
 
 	describe('VertexAI', () => {
-		const llm = Gemini_2_0_Flash();
+		describe('Flash 2.0', () => {
+			const llm = Gemini_2_0_Flash();
 
-		it('should generateText', async () => {
-			const response = await llm.generateText(SKY_PROMPT, { temperature: 0 });
+			it('should generateText', async () => {
+				const response = await llm.generateText(SKY_PROMPT, { temperature: 0 });
+				expect(response.toLowerCase()).to.include('blue');
+			});
+
+			it('should handle image attachments', async () => {
+				const response = await llm.generateText(IMAGE_BASE64_PROMPT, { temperature: 0 });
+				expect(response.toLowerCase()).to.include('elephant');
+			});
+
+			it('should handle PDF attachments', async () => {
+				const response = await llm.generateText(PDF_PROMPT, { temperature: 0 });
+				expect(response.toLowerCase()).to.include('purple');
+			});
+		});
+
+		it('Gemini 2.0 experimental should generateText', async () => {
+			const response = await Gemini_2_0_Experimental().generateText(SKY_PROMPT, { temperature: 0 });
 			expect(response.toLowerCase()).to.include('blue');
 		});
 
-		it('should handle image attachments', async () => {
-			const response = await llm.generateText(IMAGE_BASE64_PROMPT, { temperature: 0 });
-			expect(response.toLowerCase()).to.include('elephant');
+		it('Gemini 2.0 Flash Lite should generateText', async () => {
+			const response = await Gemini_2_0_Flash_Lite().generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
 		});
 
-		it('should handle PDF attachments', async () => {
-			const response = await llm.generateText(PDF_PROMPT, { temperature: 0 });
-			expect(response.toLowerCase()).to.include('purple');
+		it('Gemini 2.0 thinking experimental should generateText', async () => {
+			const response = await Gemini_2_0_Flash_Thinking().generateText(SKY_PROMPT, { temperature: 0 });
+			expect(response.toLowerCase()).to.include('blue');
 		});
 	});
 });

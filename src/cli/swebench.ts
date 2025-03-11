@@ -14,7 +14,6 @@ import { PublicWeb } from '#functions/web/web';
 import { LlmCall } from '#llm/llmCallService/llmCall';
 import { ClaudeLLMs } from '#llm/services/anthropic';
 import { defaultLLMs } from '#llm/services/defaultLlms';
-import { Gemini_1_5_Flash } from '#llm/services/vertexai';
 import { logger } from '#o11y/logger';
 import { SWEBenchAgent, SWEInstance } from '#swe/SWEBenchAgent';
 import { CodeEditingAgent } from '#swe/codeEditingAgent';

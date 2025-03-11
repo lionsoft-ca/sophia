@@ -6,8 +6,8 @@ import { promisify } from 'util';
 import { addCost, agentContext, getFileSystem } from '#agent/agentContextLocalStorage';
 import { func, funcClass } from '#functionSchema/functionDecorators';
 import { LLM } from '#llm/llm';
-import { Claude3_5_Sonnet } from '#llm/services/anthropic';
-import { Claude3_5_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
+import { Claude3_7_Sonnet } from '#llm/services/anthropic';
+import { Claude3_7_Sonnet_Vertex } from '#llm/services/anthropic-vertex';
 import { deepSeekV3 } from '#llm/services/deepseek';
 import { GPT4o } from '#llm/services/openai';
 import { logger } from '#o11y/logger';
@@ -48,7 +48,7 @@ export class AiderCodeEditor {
 		let llm: LLM;
 
 		if (process.env.GCLOUD_PROJECT && process.env.GCLOUD_CLAUDE_REGION) {
-			llm = Claude3_5_Sonnet_Vertex();
+			llm = Claude3_7_Sonnet_Vertex();
 			modelArg = `--model vertex_ai/${llm.getModel()}`;
 			span.setAttribute('model', 'sonnet');
 			env = { VERTEXAI_PROJECT: process.env.GCLOUD_PROJECT, VERTEXAI_LOCATION: process.env.GCLOUD_CLAUDE_REGION };
@@ -56,7 +56,7 @@ export class AiderCodeEditor {
 			modelArg = '--sonnet';
 			env = { ANTHROPIC_API_KEY: anthropicKey };
 			span.setAttribute('model', 'sonnet');
-			llm = Claude3_5_Sonnet();
+			llm = Claude3_7_Sonnet();
 		} else if (deepSeekKey) {
 			modelArg = '--model deepseek/deepseek-chat';
 			env = { DEEPSEEK_API_KEY: deepSeekKey };
@@ -74,12 +74,12 @@ export class AiderCodeEditor {
 			);
 		}
 
-		// Use the Sophia system directory, not the FileSystem working directory
+		// Use the TypedAI system directory, not the FileSystem working directory
 		// as we want all the 'system' files in one place.
 		const agentId = agentContext()?.agentId ?? 'NONE';
 		const llmHistoryFolder = join(systemDir(), 'aider/llm-history');
 		await promisify(fs.mkdir)(llmHistoryFolder, { recursive: true });
-		const llmHistoryFile = `${llmHistoryFolder}/${getFormattedDate()}__${agentId}}`;
+		const llmHistoryFile = `${llmHistoryFolder}/${getFormattedDate()}__${agentId}`;
 
 		logger.info(`LLM history file ${llmHistoryFile}`);
 		try {
@@ -95,7 +95,7 @@ export class AiderCodeEditor {
 
 		// Due to limitations in the provider APIs, caching statistics and costs are not available when streaming responses.
 		// --map-tokens=2048
-		// Use the Python from the Sophia .python-version as it will have aider installed
+		// Use the Python from the TypedAI .python-version as it will have aider installed
 		const fileToEditArg = filesToEdit.map((file) => `"${file}"`).join(' ');
 		logger.info(fileToEditArg);
 		const cmd = `${getPythonPath()} -m aider --no-check-update --cache-prompts ${commitArgs} --no-stream --yes ${modelArg} --llm-history-file="${llmHistoryFile}" --message-file=${messageFilePath} ${fileToEditArg}`;
@@ -159,8 +159,8 @@ function extractSessionCost(text: string): number {
 }
 
 export function getPythonPath() {
-	// Read the Sophia .python-version file
-	const pythonVersionFile = path.join(process.cwd(), '.python-version');
+	// Read the TypedAI .python-version file
+	const pythonVersionFile = path.join(process.env.TYPEDAI_HOME || process.cwd(), '.python-version');
 	const pythonVersion = fs.readFileSync(pythonVersionFile, 'utf8').trim();
 	// Use pyenv to find the path of the specified Python version
 	return `${execSync(`pyenv prefix ${pythonVersion}`, { encoding: 'utf8' }).trim()}/bin/python`;

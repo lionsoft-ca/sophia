@@ -63,6 +63,7 @@ Then you can select additional files to read and inspect if required from the <p
 
 ## Response Format
 Your response must finish in the following format:
+<think>
 <observations-to-requirements>
 </observations-to-requirements>
 <keep-ignore-thinking>
@@ -72,6 +73,7 @@ Your response must finish in the following format:
 </select-files-thinking>
 <requirements-solution-thinking>
 </requirements-solution-thinking>
+</think>
 <json>
 </json>
 
@@ -95,7 +97,8 @@ The final part of the response should be a JSON object in the following format:
 If you believe that you have all the files required for the requirements task/query, then return an empty array for inspectFiles.
 `;
 	// Do not include file contents unless they have been provided to you.
-	const initialUserPrompt = `<requirements>\n${requirements}\n</requirements>
+	const initialUserPrompt = `${repositoryOverview}${fileSystemWithSummaries}
+<requirements>\n${requirements}\n</requirements>
 
 # Initial Response Instructions
 
@@ -105,17 +108,16 @@ For this initial file selection step respond in the following format:
 <select-files-thinking>
 </select-files-thinking>
 <json>
-</json>
-
-Your response must end with a JSON object wrapped in <json> tags in the following format:
-<json>
 {
-  "inspectFiles": ["dir/file1", "dir1/dir2/file2"]
+  "inspectFiles": [
+  	"dir/file1", 
+	"dir1/dir2/file2"
+  ]
 }
 </json>
 `;
 	return [
-		{ role: 'system', content: systemPrompt, cache: 'ephemeral' },
+		// { role: 'system', content: systemPrompt, cache: 'ephemeral' },
 		{ role: 'user', content: initialUserPrompt, cache: 'ephemeral' },
 	];
 }
@@ -132,7 +134,20 @@ ${(await readFileContents(pendingFiles)).contents}
 The files that must be included in either the keepFiles or ignoreFiles properties are:
 ${pendingFiles.join('\n')}
 
-Respond only as per the Process Files Response Instructions.
+Respond only as per the Process Files Response Instructions. The final part of the response should be a JSON object in the following format:
+<json>
+{
+  keepFiles:[
+    {"path": "dir/file1", "reason": "..."}
+  ]
+  ignoreFiles:[
+    {"path": "dir/file1", "reason": "..."}
+  ],
+  inspectFiles: [
+    "dir1/dir2/file2"
+  ]
+}
+</json>
 `;
 	const iterationMessages: LlmMessage[] = [...messages, { role: 'user', content: prompt }];
 
@@ -245,6 +260,8 @@ async function selectFilesCore(
 	const keptFiles = new Set<{ path: string; reason: string }>();
 	const ignoredFiles = new Set<{ path: string; reason: string }>();
 
+	let usingHardLLM = false;
+
 	while (true) {
 		iterationCount++;
 		if (iterationCount > maxIterations) throw new Error('Maximum interaction iterations reached.');
@@ -277,8 +294,10 @@ async function selectFilesCore(
 		// Once the medium LLM has completed, then we switch to the hard LLM as a review,
 		// which may continue inspecting files until it is satisfied.
 		if (!filesToInspect || filesToInspect.length === 0) {
-			if (llm === llms().medium) {
+			// Use the hard LLM to review the final selection. Check on a variable and not on llms().medium === llm().hard in case they are the ame.
+			if (!usingHardLLM) {
 				llm = llms().hard;
+				usingHardLLM = true;
 			} else {
 				break;
 			}
@@ -311,7 +330,7 @@ ${query}
 Please provide a detailed answer to the query using the information from the available file contents, and including citations to the files where the relevant information was found.
 Respond in the following format (Note only the contents of the result tag will be returned to the user):
 
-<thinking></thinking>
+<think></think>
 <reflection></reflection>
 <result></result>                                                                                                                                                                                                                                                                                 
  `;

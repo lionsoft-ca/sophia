@@ -7,7 +7,8 @@ function generateEnvironmentFile() {
         API_BASE_URL: process.env.API_BASE_URL,
         GCLOUD_PROJECT: process.env.GCLOUD_PROJECT,
         FIRESTORE_DATABASE: process.env.FIRESTORE_DATABASE,
-        AUTH: process.env.AUTH
+        AUTH: process.env.AUTH,
+        MODULES: process.env.MODULES,
     };
     console.log(envVars)
     for ([k,v] of Object.entries(envVars)) {

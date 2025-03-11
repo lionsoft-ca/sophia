@@ -68,6 +68,13 @@ export class ChatService {
         return this._chats.asObservable();
     }
 
+    /**
+     * Set the current chat
+     */
+    setChat(chat: Chat): void {
+        this._chat.next(chat);
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // @ Public methods
     // -----------------------------------------------------------------------------------------------------

@@ -38,12 +38,12 @@ import {
     provideMarkdown,
     MarkedRenderer
 } from "ngx-markdown";
-import {MatOption} from "@angular/material/core";
 import {MatSelect, MatSelectModule} from "@angular/material/select";
 import {ReactiveFormsModule} from "@angular/forms";
 import {MatTooltipModule} from "@angular/material/tooltip";
 import {ClipboardButtonComponent} from "./clipboard-button.component";
 import {FuseConfirmationService} from "../../../../@fuse/services/confirmation";
+import {ClipboardModule} from "@angular/cdk/clipboard";
 
 @Component({
     selector: 'chat-conversation',
@@ -66,11 +66,12 @@ import {FuseConfirmationService} from "../../../../@fuse/services/confirmation";
         MatFormFieldModule,
         MatInputModule,
         TextFieldModule,
-        DatePipe,
         MarkdownModule,
         RouterModule,
         MatSelectModule,
         ReactiveFormsModule,
+        ClipboardButtonComponent,
+        ClipboardModule,
     ],
     providers: [
         provideMarkdown(),
@@ -91,8 +92,16 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
     llmId: string;
     currentUser: User;
     defaultChatLlmId: string;
+
     sendIcon: string = 'heroicons_outline:paper-airplane'
+
     sendOnEnter = true;
+    enterStateIcon: 'keyboard_return' | 'heroicons_outline:paper-airplane' = 'heroicons_outline:paper-airplane'
+
+    llmHasThinkingLevels: boolean = false;
+    thinkingIcon: string = 'heroicons_outline:minus-small';
+    thinkingLevel: 'off' | 'low' | 'medium' | 'high' = 'off';
+
     private mediaRecorder: MediaRecorder;
     private audioChunks: Blob[] = [];
     recording = false;
@@ -101,17 +110,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
     generatingTimer = null;
     readonly clipboardButton = ClipboardButtonComponent;
 
-    private assignUniqueIdsToMessages(messages: ChatMessage[]): void {
-        const existingIds = new Set<string>();
-        messages.forEach((message) => {
-            if (message.id && !existingIds.has(message.id)) {
-                existingIds.add(message.id);
-            } else {
-                message.id = uuidv4();
-                existingIds.add(message.id);
-            }
-        });
-    }
+
 
     /**
      * For the Markdown component, the syntax highlighting support has the plugins defined
@@ -193,6 +192,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
         ]).pipe(
             takeUntil(this._unsubscribeAll)
         ).subscribe(([user, llms, chat]) => {
+            this.generating = false; // if we switch back to a chat which is generating...
             this.currentUser = user;
             this.defaultChatLlmId = user.chat?.defaultLLM;
             this.llms = llms;
@@ -226,9 +226,20 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
     }
 
     ngAfterViewInit() {
-        setTimeout(() => {
-            this.messageInput.nativeElement.focus();
-        }, 500); // Small delay to ensure its displayed
+        const startTime = Date.now();
+        const maxDuration = 5000; // 5 seconds
+
+        const focusInterval = setInterval(() => {
+            if (this.messageInput) {
+                this.messageInput.nativeElement.focus();
+                clearInterval(focusInterval);
+            } else {
+                if (Date.now() - startTime >= maxDuration) {
+                    clearInterval(focusInterval);
+                    console.warn('Failed to focus messageInput after 5 seconds');
+                }
+            }
+        }, 500);
     }
 
     // -----------------------------------------------------------------------------------------------------
@@ -244,13 +255,14 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
     updateLlmSelector() {
         if (!this.llms) return;
         const llmIds = this.llms.map(llm => llm.id);
-        
+
         // For existing chats with messages, use the last message's LLM if still available
         if (this.chat?.messages?.length > 0) {
             const lastMessageLlmId = this.chat.messages.at(-1).llmId;
             if (lastMessageLlmId && llmIds.includes(lastMessageLlmId)) {
                 this.llmId = lastMessageLlmId;
                 this._changeDetectorRef.markForCheck();
+                this.updateThinkingIcon();
                 return;
             }
         }
@@ -259,6 +271,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
         if (this.defaultChatLlmId && llmIds.includes(this.defaultChatLlmId)) {
             this.llmId = this.defaultChatLlmId;
             this._changeDetectorRef.markForCheck();
+            this.updateThinkingIcon();
             return;
         }
 
@@ -271,6 +284,27 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
         if ((!this.llmId || !llmIds.includes(this.llmId)) && this.llms.length > 0) {
             this.llmId = this.llms[0].id;
             this._changeDetectorRef.markForCheck();
+        }
+        this.updateThinkingIcon();
+    }
+
+    updateThinkingIcon(): void {
+        this.llmHasThinkingLevels = this.llmId.startsWith('openai:o3') || this.llmId.includes('claude-3-7')
+    }
+
+    toggleThinking() {
+        if (this.thinkingLevel === 'off') {
+            this.thinkingLevel = 'low'
+            this.thinkingIcon = 'heroicons_outline:bars-2'
+        } else if (this.thinkingLevel === 'low') {
+            this.thinkingLevel = 'medium'
+            this.thinkingIcon = 'heroicons_outline:bars-3'
+        }else if (this.thinkingLevel === 'medium') {
+            this.thinkingLevel = 'high'
+            this.thinkingIcon = 'heroicons_outline:bars-4'
+        }else if (this.thinkingLevel === 'high') {
+            this.thinkingLevel = 'off'
+            this.thinkingIcon = 'heroicons_outline:minus-small'
         }
     }
 
@@ -355,7 +389,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 }
 
                 this.generating = true;
-                this.sendIcon = 'heroicons_outline:stop-circle'
+                // this.sendIcon = 'heroicons_outline:stop-circle'
 
                 this.chat.messages.push({
                     id: uuidv4(),
@@ -382,20 +416,23 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.messageInput.nativeElement.value = '';
                 this.selectedFiles = [];
 
+                const options = {...user.chat, thinking: this.llmHasThinkingLevels ? this.thinkingLevel : null }
+
                 // If this is a new chat, create it with latest user preferences
                 if (!this.chat.id || this.chat.id === 'new') {
                     this._changeDetectorRef.markForCheck();
-                    return this._chatService.createChat(message, this.llmId, user?.chat, attachments);
+                    return this._chatService.createChat(message, this.llmId, options, attachments);
                 }
 
                 this._scrollToBottom();
-                return this._chatService.sendMessage(this.chat.id, message, this.llmId, user?.chat, attachments);
+                return this._chatService.sendMessage(this.chat.id, message, this.llmId, options, attachments);
             })
         ).subscribe({
             next: (chat: Chat) => {
+                this.generating = false;
+
                 if (!this.chat.id || this.chat.id === 'new') {
                     clearInterval(this.generatingTimer);
-                    this.generating = false;
                     this.router.navigate([`/ui/chat/${chat.id}`]).catch(console.error);
                     return;
                 }
@@ -403,7 +440,6 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 this.chat = clone(chat);
                 this.assignUniqueIdsToMessages(this.chat.messages);
                 clearInterval(this.generatingTimer);
-                this.generating = false;
                 this.sendIcon = 'heroicons_outline:paper-airplane';
                 this._resizeMessageInput();
                 this._scrollToBottom();
@@ -411,7 +447,8 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
             },
             error: (error) => {
                 console.error('Error sending message:', error);
-                
+                this.generating = false;
+
                 // Remove the two pending messages
                 this.chat.messages.pop(); // Remove generating message
                 this.chat.messages.pop(); // Remove user message
@@ -422,7 +459,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 
                 // Reset UI state
                 clearInterval(this.generatingTimer);
-                this.generating = false;
+
                 this.sendIcon = 'heroicons_outline:paper-airplane';
                 
                 // Show error message
@@ -438,6 +475,18 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 );
                 
                 this._changeDetectorRef.markForCheck();
+            }
+        });
+    }
+
+    private assignUniqueIdsToMessages(messages: ChatMessage[]): void {
+        const existingIds = new Set<string>();
+        messages.forEach((message) => {
+            if (message.id && !existingIds.has(message.id)) {
+                existingIds.add(message.id);
+            } else {
+                message.id = uuidv4();
+                existingIds.add(message.id);
             }
         });
     }
@@ -504,11 +553,15 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
         if (event.key === 'i' && event.ctrlKey) {
             this.drawerOpened = !this.drawerOpened
         }
+        if (event.key === 't' && event.ctrlKey && this.llmHasThinkingLevels) {
+            this.toggleThinking();
+        }
     }
 
     toggleSendOnEnter(): void {
         this.sendOnEnter = !this.sendOnEnter;
         this._changeDetectorRef.markForCheck();
+        this.enterStateIcon = this.sendOnEnter ? 'heroicons_outline:paper-airplane' : 'keyboard_return';
     }
 
     startRecording(): void {

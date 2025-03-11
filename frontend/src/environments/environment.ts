@@ -17,4 +17,5 @@ export const environment = {
   firestoreDb: env['FIRESTORE_DATABASE'],
   auth: env['AUTH'],
   apiBaseUrl: env['API_BASE_URL'],
+  modules: env['MODULES'],
 };

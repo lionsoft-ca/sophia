@@ -1,7 +1,6 @@
 import { DeepSeekProvider, createDeepSeek } from '@ai-sdk/deepseek';
 import { InputCostFunction, OutputCostFunction, perMilTokens } from '#llm/base-llm';
 import { currentUser } from '#user/userService/userContext';
-import { envVar } from '#utils/env-var';
 import { LLM } from '../llm';
 import { AiLLM } from './ai-llm';
 
@@ -39,6 +38,6 @@ export class DeepSeekLLM extends AiLLM<DeepSeekProvider> {
 	}
 
 	protected apiKey(): string | undefined {
-		return currentUser().llmConfig.deepseekKey || envVar('DEEPSEEK_API_KEY');
+		return currentUser().llmConfig.deepseekKey || process.env.DEEPSEEK_API_KEY;
 	}
 }

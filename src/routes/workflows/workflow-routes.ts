@@ -5,13 +5,12 @@ import { Type } from '@sinclair/typebox';
 import { getFileSystem } from '#agent/agentContextLocalStorage';
 import { RunAgentConfig } from '#agent/agentRunner';
 import { runAgentWorkflow } from '#agent/agentWorkflowRunner';
-import { defaultLLMs } from '#llm/services/defaultLlms';
-import { Gemini_1_5_Flash } from '#llm/services/vertexai';
+import { defaultLLMs, summaryLLM } from '#llm/services/defaultLlms';
 import { logger } from '#o11y/logger';
 import { CodeEditingAgent } from '#swe/codeEditingAgent';
 import { queryWorkflow } from '#swe/discovery/selectFilesAgent';
 import { SelectFilesResponse, selectFilesToEdit } from '#swe/discovery/selectFilesToEdit';
-import { sophiaDirName, systemDir } from '../../appVars';
+import { systemDir, typedaiDirName } from '../../appVars';
 import { AppFastifyInstance } from '../../server';
 
 function findRepositories(dir: string): string[] {
@@ -51,7 +50,7 @@ export async function workflowRoutes(fastify: AppFastifyInstance) {
 
 			let agentName = 'code-ui';
 			try {
-				agentName = await Gemini_1_5_Flash().generateText(
+				agentName = await summaryLLM().generateText(
 					'<requirements>${requirements}</requirements>\nGenerate a summary of the requirements in a short sentence. Only output the summary, nothing else.',
 				);
 			} catch (e) {
@@ -110,7 +109,7 @@ export async function workflowRoutes(fastify: AppFastifyInstance) {
 					// In the UI we strip out the systemDir
 					logger.info(`systemDir ${systemDir()}`);
 					logger.info(`workinDir ${workingDirectory}`);
-					if (join(workingDirectory, sophiaDirName) !== systemDir()) {
+					if (join(workingDirectory, typedaiDirName) !== systemDir()) {
 						workingDirectory = join(systemDir(), workingDirectory);
 					}
 					logger.info(`Setting working directory to ${workingDirectory}`);

@@ -1,6 +1,9 @@
 import { BaseLLM } from '#llm/base-llm';
 import { GenerateTextOptions, LLM, LlmMessage, assistant, system, user, userContentText } from '#llm/llm';
+import { MultiLlama3_70B } from '#llm/multi-agent/fastLlama70b';
+import { MultiLlama3_70B_R1_Distill } from '#llm/multi-agent/fastLlama70bR1distill';
 import { cerebrasLlama3_3_70b } from '#llm/services/cerebras';
+import { groqLlama3_3_70B, groqLlama3_3_70B_R1_Distill } from '#llm/services/groq';
 import { logger } from '#o11y/logger';
 import { withActiveSpan } from '#o11y/trace';
 
@@ -49,7 +52,7 @@ export function CePO_LLMRegistry(): Record<string, () => LLM> {
 }
 
 export function CePO_Cerebras_Llama70b(): LLM {
-	return new CePO_LLM(cerebrasLlama3_3_70b, 'CePO (Llama 3.3 70b Cerebras)');
+	return new CePO_LLM(() => cerebrasLlama3_3_70b(), 'CePO (Llama 3.3 70b Cerebras)');
 }
 
 /**

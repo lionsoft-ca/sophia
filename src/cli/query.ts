@@ -38,11 +38,10 @@ async function main() {
 		)}`;
 		await appContext().agentStateService.save(agent);
 
-		const response = await queryWorkflow(initialPrompt);
-
+		const response: any = await queryWorkflow(initialPrompt);
 		console.log(response);
 
-		writeFileSync('src/cli/gen-out', response);
+		writeFileSync('src/cli/query-out', response);
 		console.log('Wrote output to src/cli/query-out');
 	});
 

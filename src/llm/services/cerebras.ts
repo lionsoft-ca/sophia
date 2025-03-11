@@ -2,7 +2,6 @@ import { createCerebras } from '@ai-sdk/cerebras';
 import { OpenAIProvider } from '@ai-sdk/openai';
 import { InputCostFunction, OutputCostFunction, perMilTokens } from '#llm/base-llm';
 import { currentUser } from '#user/userService/userContext';
-import { envVar } from '#utils/env-var';
 import { LLM } from '../llm';
 import { AiLLM } from './ai-llm';
 
@@ -38,6 +37,6 @@ export class CerebrasLLM extends AiLLM<OpenAIProvider> {
 	}
 
 	protected apiKey(): string | undefined {
-		return currentUser().llmConfig.cerebrasKey || envVar('CEREBRAS_API_KEY');
+		return currentUser().llmConfig.cerebrasKey || process.env.CEREBRAS_API_KEY;
 	}
 }

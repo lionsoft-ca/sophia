@@ -2,13 +2,13 @@
     <!-- Chats list -->
     <div class="bg-card relative flex w-full min-w-0 flex-auto flex-col dark:bg-transparent lg:min-w-100 lg:max-w-100">
         <!-- Header -->
-        <div class="flex flex-col md:flex-row md:items-center md:space-x-4 border-b bg-gray-50 px-8 py-4 dark:bg-transparent">
+        <div class="flex flex-col md:flex-row md:items-center md:space-x-4 border-b bg-gray-50 px-8 py-3 dark:bg-transparent">
             <!-- New Chat Button -->
             <div class="w-full md:w-auto">
                 <button
                     mat-flat-button
                     [color]="'primary'"
-                    [routerLink]="['new']"
+                    (click)="createNewChat()"
                 >
                     <mat-icon [svgIcon]="'heroicons_outline:plus'"></mat-icon>
                     <span class="ml-2 mr-1">New Chat</span>
@@ -39,7 +39,7 @@
 
         <!-- Chats -->
         <div class="flex-auto overflow-y-auto">
-            @if (filteredChats.length > 0) {
+            @if (filteredChats && filteredChats.length > 0) {
                 @for (
                     chat of filteredChats;
                     track trackByFn($index, chat)

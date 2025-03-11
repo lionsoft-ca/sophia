@@ -14,7 +14,7 @@ export class FirestoreUserService implements UserService {
 
 	constructor() {
 		this.db = new Firestore({
-			projectId: process.env.FIRESTORE_EMULATOR_HOST ? 'demo-nous' : envVar('GCLOUD_PROJECT'),
+			projectId: process.env.FIRESTORE_EMULATOR_HOST ? 'demo-typedai' : envVar('GCLOUD_PROJECT'),
 			databaseId: process.env.FIRESTORE_DATABASE,
 			ignoreUndefinedProperties: true,
 		});
@@ -66,6 +66,7 @@ export class FirestoreUserService implements UserService {
 			...data,
 			id,
 		};
+		if (!user.functionConfig) user.functionConfig = {};
 		if (!user.chat) {
 			user.chat = {
 				enabledLLMs: {},
