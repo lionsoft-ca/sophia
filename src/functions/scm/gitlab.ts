@@ -1,14 +1,18 @@
 import { existsSync } from 'fs';
 import fs from 'node:fs';
 import { join } from 'path';
+import { JobSchema, UserSchema } from '@gitbeaker/core';
 import {
 	CommitDiffSchema,
+	CreateMergeRequestOptions,
 	ExpandedMergeRequestSchema,
 	Gitlab as GitlabApi,
 	MergeRequestDiffSchema,
 	MergeRequestDiscussionNotePositionOptions,
+	PipelineSchema,
 	ProjectSchema,
 } from '@gitbeaker/rest';
+import { DeepPartial } from 'ai';
 import * as micromatch from 'micromatch';
 import { agentContext, getFileSystem, llms } from '#agent/agentContextLocalStorage';
 import { func, funcClass } from '#functionSchema/functionDecorators';
@@ -16,16 +20,16 @@ import { logger } from '#o11y/logger';
 import { span } from '#o11y/trace';
 import { CodeReviewConfig, codeReviewToXml } from '#swe/codeReview/codeReviewModel';
 import { getProjectInfo } from '#swe/projectDetection';
-import { functionConfig } from '#user/userService/userContext';
+import { currentUser, functionConfig } from '#user/userService/userContext';
 import { allSettledAndFulFilled } from '#utils/async-utils';
 import { envVar } from '#utils/env-var';
-import { execCommand, failOnError, shellEscape } from '#utils/exec';
+import { checkExecResult, execCommand, failOnError, shellEscape } from '#utils/exec';
 import { systemDir } from '../../appVars';
 import { appContext } from '../../applicationContext';
 import { cacheRetry } from '../../cache/cacheRetry';
 import { LlmTools } from '../util';
 import { GitProject } from './gitProject';
-import { SourceControlManagement } from './sourceControlManagement';
+import { MergeRequest, SourceControlManagement } from './sourceControlManagement';
 
 export interface GitLabConfig {
 	host: string;
@@ -65,6 +69,10 @@ export type GitLabProject = Pick<
 	| 'owner'
 	| 'ci_config_path'
 >;
+
+type PartialJobSchema = DeepPartial<JobSchema>;
+
+type PipelineWithJobs = PipelineSchema & { jobs: PartialJobSchema[] };
 
 @funcClass(__filename)
 export class GitLab implements SourceControlManagement {
@@ -198,15 +206,17 @@ export class GitLab implements SourceControlManagement {
 				// else switch to the default branch defined in the GitLab project
 				const projectInfo = await getProjectInfo();
 				if (projectInfo.devBranch) {
-					await getFileSystem().vcs.switchToBranch(projectInfo.devBranch);
+					await fss.vcs.switchToBranch(projectInfo.devBranch);
 				} else {
 					const gitProject = await this.getProject(projectPathWithNamespace);
 					const switchResult = await execCommand(`git switch ${gitProject.defaultBranch}`, { workingDirectory: path });
 					if (switchResult.exitCode === 0) logger.info(`Switched to branch ${gitProject.defaultBranch}`);
 				}
 
-				const result = await execCommand(`git -C ${path} pull`);
-				if (result.exitCode !== 0) logger.warn('Failed to pull updates');
+				const fetchResult = await execCommand(`git -C ${path} fetch`);
+				failOnError('Failed to fetch updates', fetchResult);
+				const pullResult = await execCommand(`git -C ${path} pull`);
+				failOnError('Failed to pull updates', pullResult);
 			} finally {
 				// Current behaviour of this function is to not change the working directory
 				fss.setWorkingDirectory(currentWorkingDir);
@@ -232,33 +242,97 @@ export class GitLab implements SourceControlManagement {
 
 	/**
 	 * Creates a Merge request
+	 * @param projectId
 	 * @param {string} title The title of the merge request
 	 * @param {string} description The description of the merge request
+	 * @param sourceBranch The branch to merge in
 	 * @param {string} targetBranch The branch to merge to
-	 * @return the merge request URL if available, else null
+	 * @return the merge request URL
 	 */
 	@func()
-	async createMergeRequest(title: string, description: string, targetBranch: string): Promise<string | null> {
-		// TODO lookup project details from project list
-		// get main branch. If starts with feature and dev develop exists, then that
-		const currentBranch: string = await getFileSystem().vcs.getBranchName();
-
+	async createMergeRequest(projectId: string | number, title: string, description: string, sourceBranch: string, targetBranch: string): Promise<MergeRequest> {
 		// TODO if the user has changed their gitlab token, then need to update the origin URL with it
-		// TODO description -o merge_request.description='${sanitize(description)}' need to remove new line characters
-		const cmd = `git push --set-upstream origin '${currentBranch}' -o merge_request.create -o merge_request.target='${targetBranch}' -o merge_request.remove_source_branch -o merge_request.title=${shellEscape(
-			title,
-		)}`;
+		// Can't get the options to create the merge request
+		// -o merge_request.create -o merge_request.target='${targetBranch}' -o merge_request.remove_source_branch -o merge_request.title=${shellEscape(title)} -o merge_request.description=${shellEscape(description)}
+
+		const cmd = `git push --set-upstream origin '${sourceBranch}'`;
 		const { exitCode, stdout, stderr } = await execCommand(cmd);
 		if (exitCode > 0) throw new Error(`${stdout}\n${stderr}`);
-		logger.info(stdout);
 
-		const url = await new LlmTools().processText(stdout, 'Respond only with the URL where the merge request is.');
+		const email = currentUser().email;
+		const userResult: UserSchema | UserSchema[] = await this.api().Users.all({ search: email });
+		let user: UserSchema | undefined;
+		if (!Array.isArray(userResult)) user = userResult;
+		else if (Array.isArray(userResult) && userResult.length === 1) user = userResult[0];
 
-		if (URL.canParse(url) && url.includes(this.config().host)) {
-			// TODO add the current user as a reviewer
-			return url;
+		const options: CreateMergeRequestOptions = { description, squash: true, removeSourceBranch: true, assigneeId: user?.id, reviewerId: user?.id };
+		const mr: ExpandedMergeRequestSchema = await this.api().MergeRequests.create(projectId, sourceBranch, targetBranch, title, options);
+
+		return {
+			id: mr.id,
+			iid: mr.iid,
+			url: mr.web_url,
+			title: mr.title,
+		};
+	}
+
+	async getLatestMergeRequestPipeline(gitlabProjectId: string | number, mergeRequestIId: number): Promise<PipelineWithJobs> {
+		// allPipelines<E extends boolean = false>(projectId: string | number, mergerequestIId: number, options?: Sudo & ShowExpanded<E>): Promise<GitlabAPIResponse<Pick<PipelineSchema, 'id' | 'sha' | 'ref' | 'status'>[], C, E, void>>;
+		const pipelines: PipelineSchema[] = await this.api().MergeRequests.allPipelines(gitlabProjectId, mergeRequestIId);
+
+		if (pipelines.length === 0) return null;
+
+		pipelines.sort((a, b) => (Date.parse(a.created_at) < Date.parse(b.created_at) ? 1 : -1));
+
+		const latestPipeline = pipelines.at(0);
+
+		const fullJobs: JobSchema[] = await this.api().Jobs.all(gitlabProjectId, { pipelineId: latestPipeline.id });
+		const jobs: PartialJobSchema[] = fullJobs.map((job) => {
+			return {
+				id: job.id,
+				status: job.status,
+				stage: job.stage,
+				name: job.name,
+				allow_failure: job.allow_failure,
+
+				started_at: job.started_at,
+				finished_at: job.finished_at,
+				duration: job.duration,
+				failure_reason: job.failure_reason,
+				user: {
+					username: job.user.username,
+				},
+				commit: {
+					id: job.commit.id,
+					created_at: job.commit.created_at,
+					author_email: job.commit.author_email,
+					title: job.commit.title,
+					message: job.commit.message,
+				},
+			};
+		});
+		return {
+			...latestPipeline,
+			jobs,
+		};
+	}
+
+	async getFailedJobLogs(gitlabProjectId: string | number, mergeRequestIId: number) {
+		const pipelines: PipelineSchema[] = await this.api().MergeRequests.allPipelines(gitlabProjectId, mergeRequestIId);
+		if (pipelines.length === 0) throw new Error('No pipelines for the merge request');
+		pipelines.sort((a, b) => (Date.parse(a.created_at) < Date.parse(b.created_at) ? 1 : -1));
+		const latestPipeline = pipelines.at(0);
+		if (latestPipeline.status !== 'failed' && latestPipeline.status !== 'blocked') throw new Error('Pipeline is not failed or blocked');
+
+		const jobs: JobSchema[] = await this.api().Jobs.all(gitlabProjectId, { pipelineId: latestPipeline.id });
+
+		const failedJobs = jobs.filter((job) => job.status === 'failed' && job.allow_failure === false);
+
+		const jobLogs = {};
+		for (const job of failedJobs) {
+			jobLogs[job.name] = await this.getJobLogs(gitlabProjectId, job.id.toString());
 		}
-		return null;
+		return jobLogs;
 	}
 
 	/**
@@ -450,11 +524,11 @@ Response only in JSON format. Do not wrap the JSON in any tags.
 	}
 
 	@func()
-	async getJobLogs(projectPath: string, jobId: string): Promise<string> {
-		if (!projectPath) throw new Error('Parameter "projectPath" must be truthy');
+	async getJobLogs(idOrProjectPath: string | number, jobId: string): Promise<string> {
+		if (!idOrProjectPath) throw new Error('Parameter "projectPath" must be truthy');
 		if (!jobId) throw new Error('Parameter "jobId" must be truthy');
 
-		const project = await this.api().Projects.show(projectPath);
+		const project = await this.api().Projects.show(idOrProjectPath);
 		const job = await this.api().Jobs.show(project.id, jobId);
 
 		return await this.api().Jobs.showLog(project.id, job.id);

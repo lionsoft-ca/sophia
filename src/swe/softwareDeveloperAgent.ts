@@ -2,7 +2,7 @@ import { addNote, agentContext, getFileSystem } from '#agent/agentContextLocalSt
 import { func, funcClass } from '#functionSchema/functionDecorators';
 import { GitProject } from '#functions/scm/gitProject';
 import { GitLabProject } from '#functions/scm/gitlab';
-import { getSourceControlManagementTool } from '#functions/scm/sourceControlManagement';
+import { MergeRequest, getSourceControlManagementTool } from '#functions/scm/sourceControlManagement';
 import { logger } from '#o11y/logger';
 import { span } from '#o11y/trace';
 import { createBranchName } from '#swe/createBranchName';
@@ -36,7 +36,7 @@ export class SoftwareDeveloperAgent {
 	 * @returns the Merge/Pull request URL if one was created
 	 */
 	@func()
-	async runSoftwareDeveloperWorkflow(requirements: string, scmFullProjectPath?: string): Promise<string> {
+	async runSoftwareDeveloperWorkflow(requirements: string, scmFullProjectPath?: string): Promise<MergeRequest> {
 		const fileSystem = getFileSystem();
 		const scm = getSourceControlManagementTool();
 
@@ -87,7 +87,7 @@ export class SoftwareDeveloperAgent {
 
 		const { title, description } = await generatePullRequestTitleDescription(requirements, baseBranch);
 
-		return await getSourceControlManagementTool().createMergeRequest(title, description, featureBranchName, baseBranch);
+		return await getSourceControlManagementTool().createMergeRequest(gitProject.id, title, description, featureBranchName, baseBranch);
 	}
 
 	@cacheRetry({ scope: 'agent' })
