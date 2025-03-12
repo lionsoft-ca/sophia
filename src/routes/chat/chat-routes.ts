@@ -44,7 +44,7 @@ export async function chatRoutes(fastify: AppFastifyInstance) {
 			title: '',
 			updatedAt: Date.now(),
 			userId: currentUser().id,
-			visibility: 'private',
+			shareable: false,
 			parentId: undefined,
 			rootId: undefined,
 		};

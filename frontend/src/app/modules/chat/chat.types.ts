@@ -1,10 +1,12 @@
 import {AiMessage} from "./ai.types";
 
+export const NEW_CHAT_ID = 'new';
+
 /** Server API chat data type */
 export interface ServerChat {
     id: string;
     userId: string;
-    visibility: 'private' | 'public';
+    shareable: boolean;
     title: string;
     updatedAt: number;
     /** When a chat is branched from the original thread by deleting/updating messages etc */
@@ -27,7 +29,8 @@ export type LlmMessage = AiMessage & {
 export interface Chat {
     id: string;
     title: string;
-    contactId?: string;
+    userId?: string;
+    shareable?: boolean;
     unreadCount?: number;
     lastMessage?: string;
     lastMessageAt?: string;

@@ -33,7 +33,7 @@ export class FirestoreChatService implements ChatService {
 				userId: data.userId,
 				title: data.title,
 				updatedAt: data.updatedAt,
-				visibility: data.visibility,
+				shareable: data.shareable,
 				parentId: data.parentId,
 				rootId: data.rootId,
 				messages: data.messages,
@@ -45,7 +45,7 @@ export class FirestoreChatService implements ChatService {
 				if (oldMessage.text) message.content = oldMessage.text;
 			}
 
-			if (chat.visibility !== 'private' && chat.userId !== currentUser().id) {
+			if (!chat.shareable && chat.userId !== currentUser().id) {
 				throw new Error('Chat not visible.');
 			}
 			return chat;
@@ -62,7 +62,6 @@ export class FirestoreChatService implements ChatService {
 		if (chat.userId !== currentUser().id) throw new Error('chat userId is invalid');
 
 		if (!chat.id) chat.id = randomUUID();
-		if (!chat.visibility) chat.visibility = 'private';
 		chat.updatedAt = Date.now();
 
 		try {
@@ -109,7 +108,7 @@ export class FirestoreChatService implements ChatService {
 						userId: data.userId,
 						title: data.title,
 						updatedAt: data.updatedAt,
-						visibility: data.visibility,
+						shareable: data.shareable,
 						parentId: data.parentId,
 						rootId: data.rootId,
 					});

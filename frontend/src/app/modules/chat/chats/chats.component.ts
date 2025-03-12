@@ -15,7 +15,7 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatSidenavModule } from '@angular/material/sidenav';
 import { ActivatedRoute, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { ChatService } from 'app/modules/chat/chat.service';
-import { Chat } from 'app/modules/chat/chat.types';
+import {Chat, NEW_CHAT_ID} from 'app/modules/chat/chat.types';
 import { Subject, takeUntil } from 'rxjs';
 import { FuseConfirmationService } from '@fuse/services/confirmation';
 import {MatSnackBar} from "@angular/material/snack-bar";
@@ -117,11 +117,11 @@ export class ChatsComponent implements OnInit, OnDestroy {
      */
     createNewChat(): void {
         // Create a temporary chat object to ensure the conversation component is displayed
-        const tempChat = { id: 'new', messages: [], title: '', updatedAt: Date.now() };
+        const tempChat = { id: NEW_CHAT_ID, messages: [], title: '', updatedAt: Date.now() };
         this._chatService.setChat(tempChat);
         
         // Navigate to the new chat route
-        this.router.navigate(['new'], { relativeTo: this.route });
+        this.router.navigate([NEW_CHAT_ID], { relativeTo: this.route }).catch(console.error);
         
         // Mark for check to ensure UI updates
         this._changeDetectorRef.markForCheck();

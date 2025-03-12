@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Attachment, Chat, ChatMessage, ServerChat } from 'app/modules/chat/chat.types';
+import {Attachment, Chat, ChatMessage, NEW_CHAT_ID, ServerChat} from 'app/modules/chat/chat.types';
 import {
     BehaviorSubject,
     Observable,
@@ -144,8 +144,8 @@ export class ChatService {
      * @param id
      */
     getChatById(id: string): Observable<any> {
-        if(!id?.trim() || id === 'new') {
-            const chat: Chat = { messages:[], id: 'new', title: '', updatedAt: Date.now() }
+        if(!id?.trim() || id === NEW_CHAT_ID) {
+            const chat: Chat = { messages:[], id: NEW_CHAT_ID, title: '', updatedAt: Date.now() }
             this._chat.next(chat);
             return this._chats
         }
