@@ -47,6 +47,9 @@ export async function getProjectInfo(): Promise<ProjectInfo | null> {
 	if (existsSync(infoPath)) {
 		const infos = parseProjectInfo(readFileSync(infoPath).toString());
 		if (infos.length === 1) return infos[0];
+	} else {
+		const infos = await detectProjectInfo();
+		if (infos.length === 1) return infos[0];
 	}
 	return null;
 }

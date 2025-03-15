@@ -3,7 +3,7 @@ import path, { join } from 'path';
 import { request } from '@octokit/request';
 import { agentContext, getFileSystem } from '#agent/agentContextLocalStorage';
 import { func, funcClass } from '#functionSchema/functionDecorators';
-import { SourceControlManagement } from '#functions/scm/sourceControlManagement';
+import { MergeRequest, SourceControlManagement } from '#functions/scm/sourceControlManagement';
 import { logger } from '#o11y/logger';
 import { functionConfig } from '#user/userService/userContext';
 import { envVar } from '#utils/env-var';
@@ -122,7 +122,7 @@ export class GitHub implements SourceControlManagement {
 	}
 
 	@func()
-	async createMergeRequest(title: string, description: string, sourceBranch: string, targetBranch: string): Promise<string> {
+	async createMergeRequest(title: string, description: string, sourceBranch: string, targetBranch: string): Promise<MergeRequest> {
 		// TODO git push
 
 		const originUrl = (await execCommand('git config --get remote.origin.url')).stdout;
@@ -139,7 +139,12 @@ export class GitHub implements SourceControlManagement {
 				'X-GitHub-Api-Version': '2022-11-28',
 			},
 		});
-		return response.url;
+		return {
+			id: response.data.id,
+			iid: response.data.id,
+			url: response.data.url,
+			title: response.data.title,
+		};
 	}
 
 	@func()

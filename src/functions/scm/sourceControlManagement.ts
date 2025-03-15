@@ -2,6 +2,13 @@ import { functionRegistry } from 'src/functionRegistry';
 import { agentContext } from '#agent/agentContextLocalStorage';
 import { GitProject } from './gitProject';
 
+export interface MergeRequest {
+	id: number;
+	iid: number;
+	url: string;
+	title: string;
+}
+
 /**
  * Source Code Management system (GitHub, Gitlab, BitBucket etc)
  */
@@ -10,7 +17,7 @@ export interface SourceControlManagement {
 
 	cloneProject(projectPathWithNamespace: string, branchOrCommit?: string): Promise<string>;
 
-	createMergeRequest(title: string, description: string, sourceBranch: string, targetBranch: string): Promise<string>;
+	createMergeRequest(projectId: string | number, title: string, description: string, sourceBranch: string, targetBranch: string): Promise<MergeRequest>;
 
 	getJobLogs(projectPath: string, jobId: string): Promise<string>;
 }

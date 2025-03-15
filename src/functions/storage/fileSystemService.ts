@@ -617,10 +617,6 @@ export class FileSystemService {
 		// First, check if workingDirectory is under any known Git roots
 		if (gitRoots.has(this.workingDirectory)) return this.workingDirectory;
 
-		for (const gitRoot of gitRoots) {
-			if (this.workingDirectory.startsWith(gitRoot)) return gitRoot;
-		}
-
 		// If not found in cache, execute Git command
 		try {
 			// Use execCmdSync to get the Git root directory synchronously
@@ -633,6 +629,7 @@ export class FileSystemService {
 			}
 			const gitRoot = result.stdout.trim();
 			// Store the new Git root in the cache
+			logger.info(`Adding git root ${gitRoot}`);
 			gitRoots.add(gitRoot);
 			return gitRoot;
 		} catch (e) {

@@ -25,7 +25,7 @@ export class InMemoryChatService implements ChatService {
 			throw new Error(`Chat with id ${chatId} not found`);
 		}
 
-		if (chat.visibility !== 'private' && chat.userId !== currentUser().id) {
+		if (!chat.shareable && chat.userId !== currentUser().id) {
 			throw new Error('Chat not visible.');
 		}
 
@@ -44,7 +44,6 @@ export class InMemoryChatService implements ChatService {
 		if (chat.userId !== currentUser().id) throw new Error('chat userId is invalid');
 
 		if (!chat.id) chat.id = randomUUID();
-		if (!chat.visibility) chat.visibility = 'private';
 		chat.updatedAt = Date.now();
 
 		// Store a clone to prevent changes to the persisted object

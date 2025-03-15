@@ -17,7 +17,7 @@ import {
     ViewChild,
     ViewEncapsulation,
 } from '@angular/core';
-import { Attachment } from 'app/modules/chat/chat.types';
+import {Attachment, NEW_CHAT_ID} from 'app/modules/chat/chat.types';
 import {MatButtonModule} from '@angular/material/button';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatIconModule} from '@angular/material/icon';
@@ -196,7 +196,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
             this.currentUser = user;
             this.defaultChatLlmId = user.chat?.defaultLLM;
             this.llms = llms;
-            this.chat = clone(chat) || { id: 'new', messages: [], title: '', updatedAt: Date.now() };
+            this.chat = clone(chat) || { id: NEW_CHAT_ID, messages: [], title: '', updatedAt: Date.now() };
             this.assignUniqueIdsToMessages(this.chat.messages);
             this.updateLlmSelector();
             this._changeDetectorRef.markForCheck();
@@ -419,7 +419,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
                 const options = {...user.chat, thinking: this.llmHasThinkingLevels ? this.thinkingLevel : null }
 
                 // If this is a new chat, create it with latest user preferences
-                if (!this.chat.id || this.chat.id === 'new') {
+                if (!this.chat.id || this.chat.id === NEW_CHAT_ID) {
                     this._changeDetectorRef.markForCheck();
                     return this._chatService.createChat(message, this.llmId, options, attachments);
                 }
@@ -431,7 +431,7 @@ export class ConversationComponent implements OnInit, OnDestroy, AfterViewInit {
             next: (chat: Chat) => {
                 this.generating = false;
 
-                if (!this.chat.id || this.chat.id === 'new') {
+                if (!this.chat.id || this.chat.id === NEW_CHAT_ID) {
                     clearInterval(this.generatingTimer);
                     this.router.navigate([`/ui/chat/${chat.id}`]).catch(console.error);
                     return;
